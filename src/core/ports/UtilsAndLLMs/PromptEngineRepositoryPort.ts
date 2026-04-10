@@ -1,4 +1,5 @@
 import type { Parameters, Prompts } from '../../domain/Prompt'
+import type { FunctionDefinition } from '../../types/tool'
 
 export interface PromptEngineRepositoryPort {
   getPrompt: (
@@ -7,4 +8,6 @@ export interface PromptEngineRepositoryPort {
   ) => Promise<Prompts>
 
   getParams: (promptReference: string) => Promise<Parameters>
+
+  getToolDefinition: (promptReference: string) => FunctionDefinition | undefined
 }

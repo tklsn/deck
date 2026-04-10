@@ -85,11 +85,21 @@ export class LocalSynomiliaPromptEngineRepositoryAdapter
     // When a tool definition exists for this prompt, collapse loop steps into
     // the header as format hints and do a single-shot call. Multi-step loops
     // cause the model to generate fragmented JSON across tool calls.
-    if (PROMPT_TOOL_DEFINITIONS[promptReference] && entry.prompts.loop?.length) {
-      const loopHints = entry.prompts.loop
-        .map((step) => stripMarkdownInstructions(interpolate(step, params)))
-        .join("\n\n");
-      return { header: `${header}\n\n${loopHints}`, loop: undefined };
+    if (PROMPT_TOOL_DEFINITIONS[promptReference]) {
+      const detailInstruction =
+        "Seja extremamente detalhado e completo em todos os campos. " +
+        "Preencha cada campo com profundidade máxima, use exemplos concretos, " +
+        "evite respostas genéricas ou ilustrativas. " +
+        "Quanto mais informação relevante e específica, melhor.";
+
+      if (entry.prompts.loop?.length) {
+        const loopHints = entry.prompts.loop
+          .map((step) => stripMarkdownInstructions(interpolate(step, params)))
+          .join("\n\n");
+        return { header: `${header}\n\n${loopHints}\n\n${detailInstruction}`, loop: undefined };
+      }
+
+      return { header: `${header}\n\n${detailInstruction}`, loop: undefined };
     }
 
     const loop = entry.prompts.loop?.map((step) =>

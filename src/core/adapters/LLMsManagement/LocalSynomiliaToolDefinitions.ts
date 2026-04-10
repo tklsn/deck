@@ -9,21 +9,21 @@ const documentSectionTool: FunctionDefinition = {
     type: "object",
     properties: {
       section_title: { type: "string", description: "Título da seção" },
-      content: { type: "string", description: "Conteúdo principal da seção" },
+      content: { type: "string", description: "Conteúdo principal da seção, completo e detalhado" },
       items: {
         type: "array",
         description: "Lista de itens detalhados da seção",
         items: {
           type: "object",
           properties: {
-            title: { type: "string" },
-            description: { type: "string" },
+            title: { type: "string", description: "Título do item" },
+            description: { type: "string", description: "Descrição detalhada do item" },
           },
           required: ["title", "description"],
         },
       },
     },
-    required: ["section_title", "content"],
+    required: ["section_title", "content", "items"],
   },
 };
 
@@ -33,22 +33,22 @@ const canvasSectionTool: FunctionDefinition = {
   parameters: {
     type: "object",
     properties: {
-      section_title: { type: "string" },
-      content: { type: "string", description: "Análise ou descrição da seção" },
+      section_title: { type: "string", description: "Título da seção do canvas" },
+      content: { type: "string", description: "Análise completa e detalhada da seção do canvas" },
       items: {
         type: "array",
         description: "Elementos listados nesta seção do canvas",
         items: {
           type: "object",
           properties: {
-            label: { type: "string" },
-            value: { type: "string" },
+            label: { type: "string", description: "Rótulo do elemento" },
+            value: { type: "string", description: "Valor ou descrição detalhada do elemento" },
           },
           required: ["label", "value"],
         },
       },
     },
-    required: ["section_title", "content"],
+    required: ["section_title", "content", "items"],
   },
 };
 
@@ -63,17 +63,17 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        title: { type: "string", description: "Título da atividade" },
-        description: { type: "string", description: "Descrição geral da atividade" },
-        objective: { type: "string", description: "Objetivo da atividade" },
+        title: { type: "string", description: "Título claro e descritivo da atividade" },
+        description: { type: "string", description: "Descrição completa e detalhada da atividade" },
+        objective: { type: "string", description: "Objetivo de aprendizado detalhado da atividade" },
         steps: {
           type: "array",
-          description: "Passos ou tópicos importantes",
+          description: "Passos ou tópicos importantes, com detalhamento suficiente para execução",
           items: { type: "string" },
         },
         resources: {
           type: "array",
-          description: "Recursos necessários",
+          description: "Recursos necessários para a atividade",
           items: { type: "string" },
         },
       },
@@ -94,8 +94,8 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
           items: {
             type: "object",
             properties: {
-              title: { type: "string" },
-              explanation: { type: "string" },
+              title: { type: "string", description: "Título do ponto essencial" },
+              explanation: { type: "string", description: "Explicação detalhada e aprofundada do ponto" },
             },
             required: ["title", "explanation"],
           },
@@ -113,10 +113,10 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        content: { type: "string", description: "Texto educativo principal" },
+        content: { type: "string", description: "Texto educativo principal, completo e aprofundado, cobrindo o tema com exemplos e explicações" },
         key_concepts: {
           type: "array",
-          description: "Conceitos-chave abordados",
+          description: "Conceitos-chave abordados no conteúdo",
           items: { type: "string" },
         },
       },
@@ -135,8 +135,8 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
           items: {
             type: "object",
             properties: {
-              title: { type: "string" },
-              body: { type: "string" },
+              title: { type: "string", description: "Título ou enunciado resumido da questão" },
+              body: { type: "string", description: "Corpo completo da questão com todos os detalhes necessários" },
             },
             required: ["title", "body"],
           },
@@ -154,32 +154,32 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        overview: { type: "string", description: "Visão geral do projeto" },
+        overview: { type: "string", description: "Visão geral abrangente do projeto, contexto, problema que resolve e público-alvo" },
         features: {
           type: "array",
           minItems: 10,
-          description: "Funcionalidades detalhadas",
+          description: "Lista detalhada de funcionalidades do sistema",
           items: {
             type: "object",
             properties: {
-              name: { type: "string" },
-              description: { type: "string" },
+              name: { type: "string", description: "Nome da funcionalidade" },
+              description: { type: "string", description: "Descrição detalhada da funcionalidade, comportamento esperado e valor gerado" },
             },
             required: ["name", "description"],
           },
         },
         flows: {
           type: "array",
-          description: "Fluxos do sistema",
+          description: "Fluxos principais do sistema descrevendo jornadas do usuário",
           items: { type: "string" },
         },
         suggestions: {
           type: "array",
-          description: "Sugestões adicionais",
+          description: "Sugestões adicionais de melhorias ou funcionalidades complementares",
           items: { type: "string" },
         },
       },
-      required: ["overview", "features", "flows"],
+      required: ["overview", "features", "flows", "suggestions"],
     },
   },
 
@@ -195,18 +195,19 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
             type: "object",
             properties: {
               id: { type: "string", description: "Identificador no formato US-N" },
-              title: { type: "string" },
-              as_user: { type: "string", description: "Tipo de usuário" },
-              want: { type: "string", description: "Ação ou funcionalidade desejada" },
-              so_that: { type: "string", description: "Benefício ou valor gerado" },
+              title: { type: "string", description: "Título descritivo da user story" },
+              as_user: { type: "string", description: "Tipo de usuário que realiza a ação" },
+              want: { type: "string", description: "Ação ou funcionalidade desejada pelo usuário" },
+              so_that: { type: "string", description: "Benefício ou valor gerado pela funcionalidade" },
               acceptance_criteria: {
                 type: "array",
+                description: "Critérios de aceite detalhados e verificáveis",
                 items: { type: "string" },
               },
-              technical_notes: { type: "string" },
-              dependencies: { type: "string" },
+              technical_notes: { type: "string", description: "Notas técnicas relevantes para implementação" },
+              dependencies: { type: "string", description: "Dependências com outras user stories ou sistemas" },
             },
-            required: ["id", "title", "as_user", "want", "so_that", "acceptance_criteria"],
+            required: ["id", "title", "as_user", "want", "so_that", "acceptance_criteria", "technical_notes", "dependencies"],
           },
         },
       },
@@ -225,17 +226,18 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
           items: {
             type: "object",
             properties: {
-              title: { type: "string" },
-              description: { type: "string" },
+              title: { type: "string", description: "Título do épico" },
+              description: { type: "string", description: "Descrição detalhada do épico e seu valor de negócio" },
               screens: {
                 type: "array",
                 items: {
                   type: "object",
                   properties: {
-                    title: { type: "string" },
-                    description: { type: "string" },
+                    title: { type: "string", description: "Nome da tela ou módulo" },
+                    description: { type: "string", description: "Descrição detalhada da tela e suas funcionalidades" },
                     acceptance_criteria: {
                       type: "array",
+                      description: "Critérios de aceite específicos e verificáveis",
                       items: { type: "string" },
                     },
                   },
@@ -268,10 +270,10 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
                 items: {
                   type: "object",
                   properties: {
-                    title: { type: "string" },
-                    given: { type: "array", items: { type: "string" } },
-                    when: { type: "array", items: { type: "string" } },
-                    then: { type: "array", items: { type: "string" } },
+                    title: { type: "string", description: "Título do cenário" },
+                    given: { type: "array", description: "Pré-condições do cenário", items: { type: "string" } },
+                    when: { type: "array", description: "Ações executadas no cenário", items: { type: "string" } },
+                    then: { type: "array", description: "Resultados esperados do cenário", items: { type: "string" } },
                   },
                   required: ["title", "given", "when", "then"],
                 },
@@ -291,13 +293,13 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
-        content: { type: "string" },
-        in_scope: { type: "array", items: { type: "string" } },
-        out_of_scope: { type: "array", items: { type: "string" } },
-        assumptions: { type: "array", items: { type: "string" } },
+        section_title: { type: "string", description: "Título da seção de escopo" },
+        content: { type: "string", description: "Descrição completa e detalhada do escopo do projeto" },
+        in_scope: { type: "array", description: "Itens explicitamente incluídos no escopo", items: { type: "string" } },
+        out_of_scope: { type: "array", description: "Itens explicitamente excluídos do escopo", items: { type: "string" } },
+        assumptions: { type: "array", description: "Premissas e restrições do projeto", items: { type: "string" } },
       },
-      required: ["section_title", "content"],
+      required: ["section_title", "content", "in_scope", "out_of_scope", "assumptions"],
     },
   },
 
@@ -307,23 +309,24 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
-        content: { type: "string" },
+        section_title: { type: "string", description: "Título da seção de arquitetura" },
+        content: { type: "string", description: "Descrição completa e detalhada da arquitetura do sistema" },
         components: {
           type: "array",
+          description: "Componentes da arquitetura com tecnologias e responsabilidades",
           items: {
             type: "object",
             properties: {
-              name: { type: "string" },
-              description: { type: "string" },
-              technology: { type: "string" },
+              name: { type: "string", description: "Nome do componente" },
+              description: { type: "string", description: "Responsabilidade detalhada do componente" },
+              technology: { type: "string", description: "Tecnologia ou framework utilizado" },
             },
-            required: ["name", "description"],
+            required: ["name", "description", "technology"],
           },
         },
-        decisions: { type: "array", items: { type: "string" } },
+        decisions: { type: "array", description: "Decisões arquiteturais relevantes com justificativa", items: { type: "string" } },
       },
-      required: ["section_title", "content"],
+      required: ["section_title", "content", "components", "decisions"],
     },
   },
 
@@ -333,13 +336,13 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
-        content: { type: "string" },
-        tasks: { type: "array", items: { type: "string" } },
-        deliverables: { type: "array", items: { type: "string" } },
-        milestones: { type: "array", items: { type: "string" } },
+        section_title: { type: "string", description: "Título da seção do plano" },
+        content: { type: "string", description: "Descrição completa e detalhada do plano de projeto" },
+        tasks: { type: "array", description: "Tarefas detalhadas do projeto", items: { type: "string" } },
+        deliverables: { type: "array", description: "Entregas esperadas do projeto", items: { type: "string" } },
+        milestones: { type: "array", description: "Marcos e pontos de verificação do projeto", items: { type: "string" } },
       },
-      required: ["section_title", "content"],
+      required: ["section_title", "content", "tasks", "deliverables", "milestones"],
     },
   },
 
@@ -349,33 +352,35 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
+        section_title: { type: "string", description: "Título da seção de requisitos" },
         functional_requirements: {
           type: "array",
+          description: "Lista completa de requisitos funcionais do sistema",
           items: {
             type: "object",
             properties: {
-              id: { type: "string" },
-              description: { type: "string" },
-              priority: { type: "string", enum: ["alta", "média", "baixa"] },
+              id: { type: "string", description: "Identificador no formato RF-N" },
+              description: { type: "string", description: "Descrição detalhada e completa do requisito funcional" },
+              priority: { type: "string", enum: ["alta", "média", "baixa"], description: "Prioridade do requisito" },
             },
-            required: ["id", "description"],
+            required: ["id", "description", "priority"],
           },
         },
         non_functional_requirements: {
           type: "array",
+          description: "Lista completa de requisitos não funcionais do sistema",
           items: {
             type: "object",
             properties: {
-              id: { type: "string" },
-              description: { type: "string" },
-              category: { type: "string" },
+              id: { type: "string", description: "Identificador no formato RNF-N" },
+              description: { type: "string", description: "Descrição detalhada e completa do requisito não funcional" },
+              category: { type: "string", description: "Categoria do requisito (ex: performance, segurança, usabilidade)" },
             },
-            required: ["id", "description"],
+            required: ["id", "description", "category"],
           },
         },
       },
-      required: ["section_title"],
+      required: ["section_title", "functional_requirements", "non_functional_requirements"],
     },
   },
 
@@ -387,23 +392,24 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        overview: { type: "string" },
+        overview: { type: "string", description: "Visão geral abrangente do projeto, contexto, problema que resolve e público-alvo" },
         features: {
           type: "array",
           minItems: 10,
+          description: "Lista detalhada de funcionalidades do sistema",
           items: {
             type: "object",
             properties: {
-              name: { type: "string" },
-              description: { type: "string" },
+              name: { type: "string", description: "Nome da funcionalidade" },
+              description: { type: "string", description: "Descrição detalhada da funcionalidade, comportamento esperado e valor gerado" },
             },
             required: ["name", "description"],
           },
         },
-        flows: { type: "array", items: { type: "string" } },
-        suggestions: { type: "array", items: { type: "string" } },
+        flows: { type: "array", description: "Fluxos principais do sistema descrevendo jornadas do usuário", items: { type: "string" } },
+        suggestions: { type: "array", description: "Sugestões adicionais de melhorias ou funcionalidades complementares", items: { type: "string" } },
       },
-      required: ["overview", "features", "flows"],
+      required: ["overview", "features", "flows", "suggestions"],
     },
   },
 
@@ -413,13 +419,13 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
-        content: { type: "string" },
-        in_scope: { type: "array", items: { type: "string" } },
-        out_of_scope: { type: "array", items: { type: "string" } },
-        assumptions: { type: "array", items: { type: "string" } },
+        section_title: { type: "string", description: "Título da seção de escopo" },
+        content: { type: "string", description: "Descrição completa e detalhada do escopo do projeto" },
+        in_scope: { type: "array", description: "Itens explicitamente incluídos no escopo", items: { type: "string" } },
+        out_of_scope: { type: "array", description: "Itens explicitamente excluídos do escopo", items: { type: "string" } },
+        assumptions: { type: "array", description: "Premissas e restrições do projeto", items: { type: "string" } },
       },
-      required: ["section_title", "content"],
+      required: ["section_title", "content", "in_scope", "out_of_scope", "assumptions"],
     },
   },
 
@@ -429,33 +435,35 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
+        section_title: { type: "string", description: "Título da seção de requisitos" },
         functional_requirements: {
           type: "array",
+          description: "Lista completa de requisitos funcionais do sistema",
           items: {
             type: "object",
             properties: {
-              id: { type: "string" },
-              description: { type: "string" },
-              priority: { type: "string", enum: ["alta", "média", "baixa"] },
+              id: { type: "string", description: "Identificador no formato RF-N" },
+              description: { type: "string", description: "Descrição detalhada e completa do requisito funcional" },
+              priority: { type: "string", enum: ["alta", "média", "baixa"], description: "Prioridade do requisito" },
             },
-            required: ["id", "description"],
+            required: ["id", "description", "priority"],
           },
         },
         non_functional_requirements: {
           type: "array",
+          description: "Lista completa de requisitos não funcionais do sistema",
           items: {
             type: "object",
             properties: {
-              id: { type: "string" },
-              description: { type: "string" },
-              category: { type: "string" },
+              id: { type: "string", description: "Identificador no formato RNF-N" },
+              description: { type: "string", description: "Descrição detalhada e completa do requisito não funcional" },
+              category: { type: "string", description: "Categoria do requisito (ex: performance, segurança, usabilidade)" },
             },
-            required: ["id", "description"],
+            required: ["id", "description", "category"],
           },
         },
       },
-      required: ["section_title"],
+      required: ["section_title", "functional_requirements", "non_functional_requirements"],
     },
   },
 
@@ -465,23 +473,24 @@ export const PROMPT_TOOL_DEFINITIONS: Record<string, FunctionDefinition> = {
     parameters: {
       type: "object",
       properties: {
-        section_title: { type: "string" },
-        content: { type: "string" },
+        section_title: { type: "string", description: "Título da seção de arquitetura" },
+        content: { type: "string", description: "Descrição completa e detalhada da arquitetura do sistema" },
         components: {
           type: "array",
+          description: "Componentes da arquitetura com tecnologias e responsabilidades",
           items: {
             type: "object",
             properties: {
-              name: { type: "string" },
-              description: { type: "string" },
-              technology: { type: "string" },
+              name: { type: "string", description: "Nome do componente" },
+              description: { type: "string", description: "Responsabilidade detalhada do componente" },
+              technology: { type: "string", description: "Tecnologia ou framework utilizado" },
             },
-            required: ["name", "description"],
+            required: ["name", "description", "technology"],
           },
         },
-        decisions: { type: "array", items: { type: "string" } },
+        decisions: { type: "array", description: "Decisões arquiteturais relevantes com justificativa", items: { type: "string" } },
       },
-      required: ["section_title", "content"],
+      required: ["section_title", "content", "components", "decisions"],
     },
   },
 

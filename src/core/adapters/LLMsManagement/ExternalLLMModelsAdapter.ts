@@ -15,9 +15,10 @@ interface AnthropicModelsResponse {
   data: Array<{ id: string; display_name?: string }>;
 }
 
-// HTTP GET proxied through the Electron main process to avoid CORS restrictions.
 async function mainProcessGet<T>(url: string, headers: Record<string, string>): Promise<T> {
-  return window.electronAPI.getJson(url, headers) as Promise<T>;
+  const res = await fetch(url, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<T>;
 }
 
 export class ExternalLLMModelsAdapter implements LocalLLMModelsPort {

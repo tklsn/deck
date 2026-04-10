@@ -2,6 +2,7 @@ import type { ArtifactInput } from "../../domain/ArtifactInput";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
 import { HandleChatStream } from "./HandleChatStream";
+import { HandleArtifactWithTool } from "./HandleArtifactWithTool";
 
 const FLUSH_CHARS = 80;
 
@@ -30,6 +31,32 @@ export class HandleArtifactStream {
     lang,
     onFlush,
   }: HandleArtifactStreamInput): Promise<string> {
+    const toolDefinition = this.promptEngineRepository.getToolDefinition(promptRef);
+
+    if (toolDefinition) {
+      // Tool calling does not support token streaming; fall back to a single-shot call.
+      const handleArtifactWithTool = new HandleArtifactWithTool(
+        this.llmsEngineRepository,
+        this.promptEngineRepository,
+      );
+      const results = await handleArtifactWithTool.execute({
+        context,
+        general_instructions,
+        promptRef,
+        model,
+        lang,
+        toolDefinition,
+      });
+      const ended = results.filter(Boolean).join("\n");
+      if (!ended.trim()) {
+        throw new Error(
+          "Resposta vazia do modelo — verifique se o modelo está carregado e tente novamente.",
+        );
+      }
+      onFlush(ended);
+      return ended;
+    }
+
     const prompts = await this.promptEngineRepository.getPrompt(
       { context, general_instructions, lang },
       promptRef,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
+import ArtifactJsonRenderer from "@/components/ArtifactJsonRenderer.vue";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -9,12 +9,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Icon } from "@iconify/vue";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useLiveQuery } from "../../../core/composables/useLiveQuery";
 import { starterProjectDB } from "../../../core/database/StarterProjectDB";
@@ -81,24 +78,25 @@ const isStreaming = computed(
   () => projectStatus.value?.[artifactKey] === "DOING",
 );
 
-const editing = ref(false);
-const editValue = ref("");
-const saving = ref(false);
+// TODO: reconstruir funcionalidade de edição de artefato
+// const editing = ref(false);
+// const editValue = ref("");
+// const saving = ref(false);
 
-function startEdit() {
-  editValue.value = content.value;
-  editing.value = true;
-}
+// function startEdit() {
+//   editValue.value = content.value;
+//   editing.value = true;
+// }
 
-async function saveEdit() {
-  saving.value = true;
-  try {
-    await service.updateProject(id, { [artifactKey]: editValue.value });
-    editing.value = false;
-  } finally {
-    saving.value = false;
-  }
-}
+// async function saveEdit() {
+//   saving.value = true;
+//   try {
+//     await service.updateProject(id, { [artifactKey]: editValue.value });
+//     editing.value = false;
+//   } finally {
+//     saving.value = false;
+//   }
+// }
 </script>
 
 <template>
@@ -142,7 +140,8 @@ async function saveEdit() {
           </Badge>
         </div>
 
-        <div class="flex gap-2">
+        <!-- TODO: reconstruir funcionalidade de edição de artefato -->
+        <!-- <div class="flex gap-2">
           <template v-if="editing">
             <Button variant="outline" size="sm" @click="editing = false">
               <Icon icon="lucide:x" />
@@ -162,20 +161,20 @@ async function saveEdit() {
             <Icon icon="lucide:pencil" />
             Editar
           </Button>
-        </div>
+        </div> -->
       </div>
 
       <Separator />
 
       <Card>
         <CardContent class="pt-4">
-          <Textarea
+          <!-- TODO: reconstruir funcionalidade de edição de artefato -->
+          <!-- <Textarea
             v-if="editing"
             v-model="editValue"
             class="min-h-[60vh] font-mono text-sm"
-          />
-          <MarkdownRenderer
-            v-else
+          /> -->
+          <ArtifactJsonRenderer
             :content="content || '*(aguardando conteúdo...)*'"
           />
         </CardContent>
