@@ -1,0 +1,527 @@
+import { AnthropicRepositoryAdapter } from "../adapters/LLMsManagement/AnthropicRepositoryAdapter";
+import { LocalLLMRepositoryAdapter } from "../adapters/LLMsManagement/LocalLLMRepositoryAdapter";
+import { OpenAIRepositoryAdapter } from "../adapters/LLMsManagement/OpenAIRepositoryAdapter";
+import { LocalSynomiliaPromptEngineRepositoryAdapter } from "../adapters/LLMsManagement/LocalSynomiliaPromptEngineRepositoryAdapter";
+import type { LLMSEngineRepositoryPort } from "../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
+import { getApiKey } from "../services/provider_settings";
+import { StarterProjectArtifactEngineAdapter } from "../adapters/StarterProject/ArtifactEngineAdapter";
+import { StarterEpicArtifactEngineAdapter } from "../adapters/StarterProject/ArtifactEpicEngineAdapter";
+import { EpicsRepositoryAdapter } from "../adapters/StarterProject/EpicsRepositoryAdapter";
+import { ProjectRepositoryAdapter } from "../adapters/StarterProject/RepositoryAdapter";
+import { UserStoriesRepositoryAdapter } from "../adapters/StarterProject/UserStoriesRepositoryAdapter";
+import { starterProjectDB } from "../database/StarterProjectDB";
+import type { ArtifactResource } from "../domain/ArtifactResource";
+import type { StarterProject } from "../domain/StarterProject/StarterProject";
+import type { StarterProjectEpic } from "../domain/StarterProject/StarterProjectEpic";
+import type { StarterProjectStatus } from "../domain/StarterProject/StarterProjectStatus";
+import type { StarterProjectUserStory } from "../domain/StarterProject/StarterProjectUserStory";
+import type { CacheStoragePort } from "../ports/UtilsAndLLMs/CacheStoragePort";
+import {
+  epicFinalTool,
+  userStoriesFinalTool,
+} from "../tools/StarterProjectToolDeclarations";
+import { PROMPT_TOOL_DEFINITIONS } from "../adapters/LLMsManagement/LocalSynomiliaToolDefinitions";
+import { CreateStarterProject } from "../usecases/Starter/CreateProject";
+import { HandleEpicsBDDS } from "../usecases/Starter/HandleEpicsBDDS";
+import { HandleEpicsUserStories } from "../usecases/Starter/HandleEpicsUserStories";
+import { HandleStarterProject } from "../usecases/Starter/HandleProject";
+import { HandleProjectEpics } from "../usecases/Starter/HandleProjectEpics";
+import { HandleStarterProjectStream } from "../usecases/Starter/HandleStarterProjectStream";
+import { GetEpicsByProjectId } from "../usecases/_Project/GetEpicsByProjectId";
+import { GetProjectById } from "../usecases/_Project/GetProjectById";
+import { GetProjectEpicById } from "../usecases/_Project/GetProjectEpicById";
+import { GetUSByEpicId } from "../usecases/_Project/GetUSByEpicId";
+import { GetUSById } from "../usecases/_Project/GetUSById";
+import { UpdateProjectById } from "../usecases/_Project/UpdateProjectById";
+
+const _noOpCache: CacheStoragePort = {
+  get: async () => null,
+  set: async () => {},
+  remove: async () => {},
+};
+
+type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic";
+
+export class StarterProjectService {
+  private projectRepository: ProjectRepositoryAdapter;
+  private epicsRepository: EpicsRepositoryAdapter;
+  private usRepository: UserStoriesRepositoryAdapter;
+
+  private artifactEngine: StarterProjectArtifactEngineAdapter;
+  private epicArtifactEngine: StarterEpicArtifactEngineAdapter;
+
+  private createProjectUseCase: CreateStarterProject;
+  private getProjectByIdUseCase: GetProjectById<
+    StarterProject,
+    StarterProjectStatus
+  >;
+  private updateProjectByIdUseCase: UpdateProjectById<
+    StarterProject,
+    StarterProjectStatus
+  >;
+  private getEpicsByProjectIdUseCase: GetEpicsByProjectId;
+  private getProjectEpicByIdUseCase: GetProjectEpicById;
+  private getUSByEpicIdUseCase: GetUSByEpicId;
+  private getUSByIdUseCase: GetUSById;
+
+  constructor() {
+    this.projectRepository = new ProjectRepositoryAdapter();
+    this.epicsRepository = new EpicsRepositoryAdapter();
+    this.usRepository = new UserStoriesRepositoryAdapter();
+
+    this.artifactEngine = new StarterProjectArtifactEngineAdapter();
+    this.epicArtifactEngine = new StarterEpicArtifactEngineAdapter();
+
+    this.createProjectUseCase = new CreateStarterProject(
+      this.projectRepository,
+    );
+
+    this.getProjectByIdUseCase = new GetProjectById(this.projectRepository);
+    this.updateProjectByIdUseCase = new UpdateProjectById(
+      this.projectRepository,
+    );
+    this.getEpicsByProjectIdUseCase = new GetEpicsByProjectId(
+      this.epicsRepository,
+    );
+    this.getProjectEpicByIdUseCase = new GetProjectEpicById(
+      this.epicsRepository,
+    );
+    this.getUSByEpicIdUseCase = new GetUSByEpicId(this.usRepository);
+    this.getUSByIdUseCase = new GetUSById(this.usRepository, _noOpCache);
+  }
+
+  // POST /create
+  async createProject(
+    params: Pick<StarterProject, "prompt" | "title" | "lang" | "userId"> & {
+      provider: string;
+      model?: string;
+    },
+    local: boolean = false,
+    stream: boolean = false,
+  ): Promise<StarterProject> {
+    const provider = (params.provider ?? "ollama") as ProviderValue;
+    const model = params.model;
+    const project = await this.createProjectUseCase.execute({
+      ...params,
+      provider,
+      model,
+    });
+    if (stream) {
+      this._fireHandleStream(
+        project.id!,
+        provider as ProviderValue,
+        model,
+        local,
+      );
+    } else {
+      this._fireHandle(
+        project.id!,
+        provider as ProviderValue,
+        model,
+        local,
+      ).catch(console.error);
+    }
+    return project;
+  }
+
+  // GET /
+  async listProjects(userId: string): Promise<StarterProject[]> {
+    return this.projectRepository.listByUserId(userId);
+  }
+
+  // GET /[id]
+  async getProjectById(id: string): Promise<StarterProject> {
+    return this.getProjectByIdUseCase.execute(id);
+  }
+
+  // PATCH /[id]
+  async updateProject(
+    id: string,
+    payload: Partial<StarterProject>,
+  ): Promise<StarterProject> {
+    const current = await this.getProjectByIdUseCase.execute(id);
+    return this.updateProjectByIdUseCase.execute({
+      id,
+      payload: { ...current, ...payload },
+    });
+  }
+
+  // Public runner methods (for use by Web Worker)
+  async runProject(id: string): Promise<void> {
+    return this._fireHandleFromProject(id);
+  }
+
+  async runReprocessBDD(id: string, epicId: string): Promise<void> {
+    return this._reprocessBDD(id, epicId);
+  }
+
+  async runReprocessUserStories(id: string, epicId: string): Promise<void> {
+    return this._reprocessUserStories(id, epicId);
+  }
+
+  // POST /[id]/handle
+  handleProject(id: string): void {
+    this._spawnWorker({ type: "handle", projectId: id });
+  }
+
+  // POST /[id]/reprocess-all
+  async reprocessAll(id: string): Promise<void> {
+    await starterProjectDB.starterProjectStatuses
+      .where("projectId")
+      .equals(id)
+      .modify({
+        expandedPrompt: "PENDING",
+        requirementDocument: "PENDING",
+        projectPlan: "PENDING",
+        projectScope: "PENDING",
+        projectArchitecture: "PENDING",
+        epics: "PENDING",
+      });
+    this.handleProject(id);
+  }
+
+  // POST /[id]/handle/stream
+  handleProjectStream(
+    id: string,
+    provider: string,
+    model: string,
+    local: boolean,
+  ): void {
+    this._fireHandleStream(id, provider as ProviderValue, model, local);
+  }
+
+  // GET /[id]/status
+  async getProjectStatus(id: string): Promise<StarterProjectStatus> {
+    return this.projectRepository.getStatus(id);
+  }
+
+  // GET /[id]/artifacts
+  async getProjectArtifacts(id: string): Promise<ArtifactResource[]> {
+    return this.projectRepository.getResources(id);
+  }
+
+  // GET /[id]/epics
+  async getEpics(id: string): Promise<StarterProjectEpic[]> {
+    return this.getEpicsByProjectIdUseCase.execute(id);
+  }
+
+  // GET /[id]/epics/[epic_id]
+  async getEpic(_id: string, epicId: string): Promise<StarterProjectEpic> {
+    return this.getProjectEpicByIdUseCase.execute({ epicId });
+  }
+
+  // GET /[id]/epics/[epic_id]/user-stories
+  async getEpicUserStories(
+    _id: string,
+    epicId: string,
+  ): Promise<StarterProjectUserStory[]> {
+    return this.getUSByEpicIdUseCase.execute({ epicId });
+  }
+
+  // GET /[id]/epics/[epic_id]/user-stories/[us_id]
+  async getUserStory(
+    _id: string,
+    _epicId: string,
+    usId: string,
+  ): Promise<StarterProjectUserStory> {
+    return this.getUSByIdUseCase.execute({ usId });
+  }
+
+  // POST /[id]/epics/[epic_id]/bdd/reprocess
+  reprocessEpicBDD(id: string, epicId: string): void {
+    this._spawnWorker({ type: "reprocess-bdd", projectId: id, epicId });
+  }
+
+  // POST /[id]/epics/[epic_id]/user-stories/reprocess
+  reprocessEpicUserStories(id: string, epicId: string): void {
+    this._spawnWorker({ type: "reprocess-stories", projectId: id, epicId });
+  }
+
+  // ─── background tasks ─────────────────────────────────────────────────────
+
+  private _spawnWorker(message: Record<string, unknown>): void {
+    const apiKeys: Record<string, string | null> = {
+      openai: getApiKey("openai"),
+      anthropic: getApiKey("anthropic"),
+    };
+    const worker = new Worker(
+      new URL("@/workers/project-processor.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.postMessage({ ...message, apiKeys });
+    worker.onmessage = () => worker.terminate();
+    worker.onerror = (e) => {
+      console.error(e);
+      worker.terminate();
+    };
+  }
+
+  private _resolveLLMContext(
+    project: { provider?: string; model?: string },
+    fallbackProvider?: ProviderValue,
+    fallbackModel?: string,
+  ): {
+    llmRepo: LLMSEngineRepositoryPort;
+    effectiveProvider: ProviderValue;
+    effectiveModel: string | undefined;
+    effectiveLocal: boolean;
+  } {
+    const effectiveProvider = (project.provider ??
+      fallbackProvider ??
+      "ollama") as ProviderValue;
+    const effectiveModel = project.model ?? fallbackModel;
+    const effectiveLocal = effectiveProvider === "ollama" || effectiveProvider === "lmstudio";
+
+    let llmRepo: LLMSEngineRepositoryPort;
+
+    if (effectiveProvider === "openai") {
+      llmRepo = new OpenAIRepositoryAdapter(getApiKey("openai") ?? "");
+    } else if (effectiveProvider === "anthropic") {
+      llmRepo = new AnthropicRepositoryAdapter(getApiKey("anthropic") ?? "");
+    } else {
+      llmRepo = new LocalLLMRepositoryAdapter({ provider: effectiveProvider });
+    }
+
+    return { llmRepo, effectiveProvider, effectiveModel, effectiveLocal };
+  }
+
+  private async _fireHandleFromProject(id: string): Promise<void> {
+    const _project = await this.projectRepository.findById(id);
+    if (!_project) throw new Error(`Project with id ${id} not found`);
+    const { effectiveProvider, effectiveModel, effectiveLocal } =
+      this._resolveLLMContext(_project);
+    return this._fireHandle(id, effectiveProvider, effectiveModel, effectiveLocal);
+  }
+
+  private _fireHandleStream(
+    id: string,
+    provider: ProviderValue,
+    model: string | undefined,
+    local: boolean,
+  ): void {
+    this._handleStream(id, provider, model, local).catch(console.error);
+  }
+
+  private async _handleStream(
+    id: string,
+    provider: ProviderValue,
+    model: string | undefined,
+    _local: boolean,
+  ): Promise<void> {
+    const _project = await this.projectRepository.findById(id);
+
+    if (!_project) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+
+    const { llmRepo, effectiveModel } = this._resolveLLMContext(
+      _project,
+      provider,
+      model,
+    );
+    const promptRepo = new LocalSynomiliaPromptEngineRepositoryAdapter();
+
+    const handleProjectStreamUseCase = new HandleStarterProjectStream(
+      llmRepo,
+      promptRepo,
+      this.projectRepository,
+      this.artifactEngine,
+    );
+
+    let partialUpdateQueue = Promise.resolve();
+
+    const project = await handleProjectStreamUseCase.execute({
+      project: _project,
+      model: effectiveModel,
+      onPartialArtifact: (projectId, key, content) => {
+        // Keep updates ordered to avoid stale chunks overwriting newer content.
+        partialUpdateQueue = partialUpdateQueue
+          .then(() =>
+            starterProjectDB.starterProjects.update(projectId, {
+              [key]: content,
+            }),
+          )
+          .catch(console.error);
+      },
+    });
+
+    await partialUpdateQueue;
+
+    const artifacts = await this.artifactEngine.getArtifactPromptRef();
+    const artifactsDone = artifacts.every(
+      (a) => project.projectStatus?.[a.keyOnProject] === "SUCCESS",
+    );
+
+    if (artifactsDone) {
+      await this._runEpicPipeline(
+        llmRepo,
+        promptRepo,
+        project,
+        _project.lang,
+        effectiveModel,
+      );
+    }
+  }
+
+  private async _fireHandle(
+    id: string,
+    provider: ProviderValue,
+    model: string | undefined,
+    _local: boolean,
+  ): Promise<void> {
+    const _project = await this.projectRepository.findById(id);
+
+    if (!_project) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+
+    const { llmRepo, effectiveModel } = this._resolveLLMContext(
+      _project,
+      provider,
+      model,
+    );
+    const promptRepo = new LocalSynomiliaPromptEngineRepositoryAdapter();
+
+    const handleProjectUseCase = new HandleStarterProject(
+      llmRepo,
+      promptRepo,
+      this.projectRepository,
+      this.artifactEngine,
+    );
+
+    const project = await handleProjectUseCase.execute({
+      project: _project,
+      model: effectiveModel,
+    });
+
+    // TODO: parei aqui, continuar implementação para reprocessar epics, bdds e user stories quando for local
+
+    const artifacts = await this.artifactEngine.getArtifactPromptRef();
+    const artifactsDone = artifacts.every(
+      (a) => project.projectStatus?.[a.keyOnProject] === "SUCCESS",
+    );
+
+    if (artifactsDone) {
+      await this._runEpicPipeline(
+        llmRepo,
+        promptRepo,
+        project,
+        _project.lang,
+        effectiveModel,
+      );
+    }
+  }
+
+  private async _reprocessBDD(id: string, epicId: string): Promise<void> {
+    const _project = await this.projectRepository.findById(id);
+
+    if (!_project) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+
+    const { llmRepo } = this._resolveLLMContext(_project);
+    const promptRepo = new LocalSynomiliaPromptEngineRepositoryAdapter();
+
+    const handleBDDsUseCase = new HandleEpicsBDDS(
+      llmRepo,
+      this.epicsRepository,
+      promptRepo,
+    );
+
+    const epic = await this.epicsRepository.findById(epicId);
+    await handleBDDsUseCase.execute({
+      project: [epic],
+      artifact:
+        this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject("bdd"),
+      toolDefinition: PROMPT_TOOL_DEFINITIONS["sofia:starter:map-bdd"]!,
+      lang: _project.lang,
+      model: _project.model,
+    });
+  }
+
+  private async _reprocessUserStories(
+    id: string,
+    epicId: string,
+  ): Promise<void> {
+    const _project = await this.projectRepository.findById(id);
+
+    if (!_project) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+
+    const { llmRepo } = this._resolveLLMContext(_project);
+    const promptRepo = new LocalSynomiliaPromptEngineRepositoryAdapter();
+
+    const handleUserStoriesUseCase = new HandleEpicsUserStories(
+      llmRepo,
+      this.epicsRepository,
+      promptRepo,
+      this.usRepository,
+    );
+
+    const epic = await this.epicsRepository.findById(epicId);
+    await handleUserStoriesUseCase.execute({
+      project: [epic],
+      artifact:
+        this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject(
+          "userStories",
+        ),
+      toolDefinition: userStoriesFinalTool,
+      lang: _project.lang,
+      model: _project.model,
+    });
+  }
+
+  private async _runEpicPipeline(
+    llmRepo: LLMSEngineRepositoryPort,
+    promptRepo: LocalSynomiliaPromptEngineRepositoryAdapter,
+    project: StarterProject,
+    lang: string,
+    model: string | undefined,
+  ): Promise<void> {
+    const handleEpicsUseCase = new HandleProjectEpics(
+      llmRepo,
+      this.projectRepository,
+      promptRepo,
+      this.epicsRepository,
+    );
+    const handleBDDsUseCase = new HandleEpicsBDDS(
+      llmRepo,
+      this.epicsRepository,
+      promptRepo,
+    );
+    const handleUserStoriesUseCase = new HandleEpicsUserStories(
+      llmRepo,
+      this.epicsRepository,
+      promptRepo,
+      this.usRepository,
+    );
+
+    const epics = await handleEpicsUseCase.execute({
+      project,
+      artifact:
+        this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject("epics"),
+      toolDefinition: epicFinalTool,
+    });
+
+    await handleBDDsUseCase.execute({
+      project: epics,
+      artifact:
+        this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject("bdd"),
+      toolDefinition: PROMPT_TOOL_DEFINITIONS["sofia:starter:map-bdd"]!,
+      lang,
+      model,
+    });
+
+    await handleUserStoriesUseCase.execute({
+      project: epics,
+      artifact:
+        this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject(
+          "userStories",
+        ),
+      toolDefinition: userStoriesFinalTool,
+      lang,
+      model,
+    });
+  }
+}
