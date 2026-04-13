@@ -46,8 +46,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm run build -- --publish never
+      - name: Build web
+        run: pnpm run build:web
+
+      - name: Build main
+        run: pnpm run build:main
+
+      - name: Package
+        run: pnpm exec electron-builder --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
