@@ -28,9 +28,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.name }})
 
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,5 +46,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and publish
-        run: pnpm run build -- --publish always
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.name }}
+          path: |
+            release/*.AppImage
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+          if-no-files-found: warn
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Publish Release
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Upload assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**
+          token: ${{ secrets.GITHUB_TOKEN }}
