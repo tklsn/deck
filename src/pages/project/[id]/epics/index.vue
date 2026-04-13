@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Icon } from "@iconify/vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useLiveQuery } from "../../../../core/composables/useLiveQuery";
 import type {
@@ -24,9 +25,11 @@ import type {
   StarterProjectEpicStatusRecord,
 } from "../../../../core/database/StarterProjectDB";
 import { starterProjectDB } from "../../../../core/database/StarterProjectDB";
+import { StarterProjectService } from "../../../../core/services/starter_project";
 
 const route = useRoute();
 const router = useRouter();
+const service = new StarterProjectService();
 // @ts-ignore
 const id = Array.isArray(route.params.id)
   ? // @ts-ignore
@@ -80,6 +83,19 @@ function getStatusLabel(status: string | undefined): string {
   };
   return labels[status ?? "PENDING"] ?? status ?? "Pendente";
 }
+
+type EpicWithStatus = StarterProjectEpicRecord & {
+  epicStatus?: StarterProjectEpicStatusRecord;
+};
+
+function hasEpicFailure(epic: EpicWithStatus): boolean {
+  return (
+    epic.epicStatus?.bdd === "FAILURE" ||
+    epic.epicStatus?.userStories === "FAILURE"
+  );
+}
+
+const anyEpicFailure = computed(() => epics.value.some(hasEpicFailure));
 </script>
 
 <template>
@@ -116,6 +132,30 @@ function getStatusLabel(status: string | undefined): string {
       >
         <Icon icon="lucide:arrow-left" />
         Voltar
+      </Button>
+    </div>
+
+    <div
+      v-if="anyEpicFailure"
+      class="bg-destructive/10 border-destructive/30 flex items-center justify-between gap-3 rounded-md border px-4 py-3"
+    >
+      <div class="flex items-center gap-2 text-sm">
+        <Icon
+          icon="lucide:alert-triangle"
+          class="text-destructive h-4 w-4 shrink-0"
+        />
+        <span
+          >Um ou mais épicos falharam ao gerar BDD ou Histórias de
+          Usuário.</span
+        >
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        @click="service.reprocessAllEpicsArtifacts(id)"
+      >
+        <Icon icon="lucide:refresh-cw" class="h-3 w-3" />
+        Reprocessar todos
       </Button>
     </div>
 
@@ -162,6 +202,16 @@ function getStatusLabel(status: string | undefined): string {
               </Badge>
             </div>
           </div>
+          <Button
+            v-if="hasEpicFailure(epic)"
+            variant="destructive"
+            size="sm"
+            class="mt-3 w-full"
+            @click.stop="service.reprocessEpicAll(id, epic.id)"
+          >
+            <Icon icon="lucide:refresh-cw" class="h-3 w-3" />
+            Retry BDD/US
+          </Button>
         </CardContent>
       </Card>
     </div>

@@ -31,42 +31,52 @@ export abstract class BaseHandleEpicsArtifact {
     keyOfInput: string | string[],
     processEpic: (epic: StarterProjectEpic, context: string) => Promise<void>,
   ): Promise<void> {
+    const MAX_RETRIES = 2;
+
     for (const epic of epics) {
       let actualProject = await this.getProjectEpic.execute({
         epicId: epic.id!,
       });
 
       if (actualProject.epicStatus[keyOnProject] !== "SUCCESS") {
-        try {
-          await this.updateProjectStatus.execute({
-            project: actualProject,
-            keyOnProject,
-            status: "DOING",
-          });
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+          if (attempt > 0)
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
 
-          actualProject = await this.getProjectEpic.execute({
-            epicId: epic.id,
-          });
+          try {
+            await this.updateProjectStatus.execute({
+              project: actualProject,
+              keyOnProject,
+              status: "DOING",
+            });
 
-          const context: string = Array.isArray(keyOfInput)
-            ? keyOfInput.map((key) => actualProject[key]).join("\n")
-            : actualProject[keyOfInput];
+            actualProject = await this.getProjectEpic.execute({
+              epicId: epic.id,
+            });
 
-          await processEpic(actualProject, context);
+            const context: string = Array.isArray(keyOfInput)
+              ? keyOfInput.map((key) => actualProject[key]).join("\n")
+              : actualProject[keyOfInput];
 
-          await this.updateProjectStatus.execute({
-            project: actualProject,
-            keyOnProject,
-            status: "SUCCESS",
-          });
-        } catch (error) {
-          console.error(error);
+            await processEpic(actualProject, context);
 
-          await this.updateProjectStatus.execute({
-            project: actualProject,
-            keyOnProject,
-            status: "FAILURE",
-          });
+            await this.updateProjectStatus.execute({
+              project: actualProject,
+              keyOnProject,
+              status: "SUCCESS",
+            });
+
+            break;
+          } catch (error) {
+            console.error(`[epic:${keyOnProject}] tentativa ${attempt + 1} falhou:`, error);
+            if (attempt === MAX_RETRIES) {
+              await this.updateProjectStatus.execute({
+                project: actualProject,
+                keyOnProject,
+                status: "FAILURE",
+              });
+            }
+          }
         }
       }
     }

@@ -67,6 +67,7 @@
     ]
   },
   "build": {
+    "productName": "deck",
     "appId": "br.com.tksn.deck",
     "asar": true,
     "directories": {

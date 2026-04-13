@@ -159,6 +159,15 @@ export class StarterProjectService {
     return this._reprocessUserStories(id, epicId);
   }
 
+  async runReprocessEpicAll(id: string, epicId: string): Promise<void> {
+    await this._reprocessBDD(id, epicId);
+    await this._reprocessUserStories(id, epicId);
+  }
+
+  async runReprocessAllEpicsArtifacts(id: string): Promise<void> {
+    return this._reprocessAllEpicsArtifacts(id);
+  }
+
   // POST /[id]/handle
   handleProject(id: string): void {
     this._spawnWorker({ type: "handle", projectId: id });
@@ -235,6 +244,16 @@ export class StarterProjectService {
   // POST /[id]/epics/[epic_id]/user-stories/reprocess
   reprocessEpicUserStories(id: string, epicId: string): void {
     this._spawnWorker({ type: "reprocess-stories", projectId: id, epicId });
+  }
+
+  // POST /[id]/epics/[epic_id]/reprocess-all
+  reprocessEpicAll(id: string, epicId: string): void {
+    this._spawnWorker({ type: "reprocess-epic-all", projectId: id, epicId });
+  }
+
+  // POST /[id]/epics/reprocess-artifacts
+  reprocessAllEpicsArtifacts(id: string): void {
+    this._spawnWorker({ type: "reprocess-all-epics-artifacts", projectId: id });
   }
 
   // ─── background tasks ─────────────────────────────────────────────────────
@@ -469,6 +488,44 @@ export class StarterProjectService {
       toolDefinition: userStoriesFinalTool,
       lang: _project.lang,
       model: _project.model,
+    });
+  }
+
+  private async _reprocessAllEpicsArtifacts(id: string): Promise<void> {
+    const _project = await this.projectRepository.findById(id);
+    if (!_project) throw new Error(`Project with id ${id} not found`);
+
+    const { llmRepo, effectiveModel } = this._resolveLLMContext(_project);
+    const promptRepo = new LocalSynomiliaPromptEngineRepositoryAdapter();
+
+    const epics = await this.getEpicsByProjectIdUseCase.execute(id);
+
+    const handleBDDsUseCase = new HandleEpicsBDDS(
+      llmRepo,
+      this.epicsRepository,
+      promptRepo,
+    );
+    const handleUserStoriesUseCase = new HandleEpicsUserStories(
+      llmRepo,
+      this.epicsRepository,
+      promptRepo,
+      this.usRepository,
+    );
+
+    await handleBDDsUseCase.execute({
+      project: epics,
+      artifact: this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject("bdd"),
+      toolDefinition: PROMPT_TOOL_DEFINITIONS["sofia:starter:map-bdd"]!,
+      lang: _project.lang,
+      model: effectiveModel,
+    });
+
+    await handleUserStoriesUseCase.execute({
+      project: epics,
+      artifact: this.epicArtifactEngine.getArtifactPromptRefByKeyOnProject("userStories"),
+      toolDefinition: userStoriesFinalTool,
+      lang: _project.lang,
+      model: effectiveModel,
     });
   }
 

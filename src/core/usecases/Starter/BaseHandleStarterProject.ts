@@ -54,54 +54,69 @@ export abstract class BaseHandleStarterProject {
     const _artifacts =
       await this.artifactEngineRepository.getArtifactPromptRef();
 
+    const MAX_RETRIES = 2;
+
     for (const resource of _artifacts) {
       const { keyOnProject, model, promptRef, keyOfInput } = resource;
 
       if (project.projectStatus[keyOnProject] === "SUCCESS") continue;
 
-      try {
-        await this.updateProjectStatus.execute({
-          project,
-          keyOnProject,
-          status: "DOING",
-        });
+      let success = false;
 
-        project = await this.getProject.execute(_project.id!);
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 0)
+          await new Promise((r) => setTimeout(r, 1500 * attempt));
 
-        const context: string = Array.isArray(keyOfInput)
-          ? keyOfInput
-              .map((key) => project[key as keyof StarterProject] as string)
-              .join("\n")
-          : (project[keyOfInput as keyof StarterProject] as string);
+        try {
+          await this.updateProjectStatus.execute({
+            project,
+            keyOnProject,
+            status: "DOING",
+          });
 
-        const general_instructions = `Você deve retornar os resultados no seguinte idioma: ${project.lang}`;
+          project = await this.getProject.execute(_project.id!);
 
-        const result = await processStep({
-          context,
-          general_instructions,
-          model: _customModel ?? model,
-          promptRef,
-          lang: project.lang,
-          keyOnProject,
-        });
+          const context: string = Array.isArray(keyOfInput)
+            ? keyOfInput
+                .map((key) => project[key as keyof StarterProject] as string)
+                .join("\n")
+            : (project[keyOfInput as keyof StarterProject] as string);
 
-        project[keyOnProject as keyof StarterProject] = result as never;
-        await this.projectRepository.update(project);
+          const general_instructions = `Você deve retornar os resultados no seguinte idioma: ${project.lang}`;
 
-        await this.updateProjectStatus.execute({
-          project,
-          keyOnProject,
-          status: "SUCCESS",
-        });
-      } catch (error) {
-        await this.updateProjectStatus.execute({
-          project,
-          keyOnProject,
-          status: "FAILURE",
-        });
-        console.error(error);
-        break;
+          const result = await processStep({
+            context,
+            general_instructions,
+            model: _customModel ?? model,
+            promptRef,
+            lang: project.lang,
+            keyOnProject,
+          });
+
+          project[keyOnProject as keyof StarterProject] = result as never;
+          await this.projectRepository.update(project);
+
+          await this.updateProjectStatus.execute({
+            project,
+            keyOnProject,
+            status: "SUCCESS",
+          });
+
+          success = true;
+          break;
+        } catch (error) {
+          console.error(`[artifact:${keyOnProject}] tentativa ${attempt + 1} falhou:`, error);
+          if (attempt === MAX_RETRIES) {
+            await this.updateProjectStatus.execute({
+              project,
+              keyOnProject,
+              status: "FAILURE",
+            });
+          }
+        }
       }
+
+      if (!success) break;
     }
 
     return await this.getProject.execute(_project.id!);
