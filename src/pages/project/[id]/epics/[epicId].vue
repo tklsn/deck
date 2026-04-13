@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -113,6 +112,10 @@ function reprocessBDD() {
 function reprocessUserStories() {
   service.reprocessEpicUserStories(id, epicId);
 }
+
+function reprocessAll() {
+  service.reprocessEpicAll(id, epicId);
+}
 </script>
 
 <template>
@@ -158,14 +161,28 @@ function reprocessUserStories() {
           <h1 class="text-2xl font-bold">{{ epic.name }}</h1>
           <p class="text-muted-foreground text-sm">{{ epic.description }}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          @click="router.push(`/project/${id}/epics`)"
-        >
-          <Icon icon="lucide:arrow-left" />
-          Voltar
-        </Button>
+        <div class="flex gap-2">
+          <Button
+            v-if="
+              epicStatus?.bdd === 'FAILURE' ||
+              epicStatus?.userStories === 'FAILURE'
+            "
+            size="sm"
+            variant="outline"
+            @click="reprocessAll"
+          >
+            <Icon icon="lucide:refresh-cw" />
+            Tentar novamente
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            @click="router.push(`/project/${id}/epics`)"
+          >
+            <Icon icon="lucide:arrow-left" />
+            Voltar
+          </Button>
+        </div>
       </div>
 
       <Separator />
@@ -321,7 +338,10 @@ function reprocessUserStories() {
             </p>
 
             <template v-else-if="epic.bdd">
-              <template v-for="feature in parseBdd(epic.bdd)" :key="feature.name">
+              <template
+                v-for="feature in parseBdd(epic.bdd)"
+                :key="feature.name"
+              >
                 <Card class="mb-4">
                   <CardHeader class="pb-2">
                     <CardTitle class="text-base">{{ feature.name }}</CardTitle>
@@ -333,14 +353,30 @@ function reprocessUserStories() {
                       class="border-l-2 border-muted pl-4 space-y-1 text-sm"
                     >
                       <p class="font-medium">{{ scenario.title }}</p>
-                      <p v-for="g in scenario.given" :key="g" class="text-muted-foreground">
-                        <span class="font-semibold text-foreground">Dado </span>{{ g }}
+                      <p
+                        v-for="g in scenario.given"
+                        :key="g"
+                        class="text-muted-foreground"
+                      >
+                        <span class="font-semibold text-foreground">Dado </span
+                        >{{ g }}
                       </p>
-                      <p v-for="w in scenario.when" :key="w" class="text-muted-foreground">
-                        <span class="font-semibold text-foreground">Quando </span>{{ w }}
+                      <p
+                        v-for="w in scenario.when"
+                        :key="w"
+                        class="text-muted-foreground"
+                      >
+                        <span class="font-semibold text-foreground"
+                          >Quando </span
+                        >{{ w }}
                       </p>
-                      <p v-for="t in scenario.then" :key="t" class="text-muted-foreground">
-                        <span class="font-semibold text-foreground">Então </span>{{ t }}
+                      <p
+                        v-for="t in scenario.then"
+                        :key="t"
+                        class="text-muted-foreground"
+                      >
+                        <span class="font-semibold text-foreground">Então </span
+                        >{{ t }}
                       </p>
                     </div>
                   </CardContent>
