@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.2.3
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.2.2...v1.2.3)
+
+### 🏡 Chore
+
+- **build:** Separate build steps for web and main ([f6a115a](https://github.com/tklsn/deck/commit/f6a115a))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.2.2
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.2.1...v1.2.2)
