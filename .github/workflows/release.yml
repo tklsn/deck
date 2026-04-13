@@ -47,7 +47,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build
+        run: pnpm run build -- --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
