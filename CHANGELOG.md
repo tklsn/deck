@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.2.1
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.2.0...v1.2.1)
+
+### 🏡 Chore
+
+- **build:** Fix build ([c02dc4e](https://github.com/tklsn/deck/commit/c02dc4e))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.2.0
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.1.0...v1.2.0)
