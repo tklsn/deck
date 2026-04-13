@@ -24,6 +24,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ExternalLLMModelsAdapter } from "../../../core/adapters/LLMsManagement/ExternalLLMModelsAdapter";
 import { LocalLLMModelsAdapter } from "../../../core/adapters/LLMsManagement/LocalLLMModelsAdapter";
 import { useLiveQuery } from "../../../core/composables/useLiveQuery";
+import { useProjectExport } from "../../../core/composables/useProjectExport";
 import { starterProjectDB } from "../../../core/database/StarterProjectDB";
 import type { LocalLLMModel } from "../../../core/ports/UtilsAndLLMs/LocalLLMModelsPort";
 import type { ExternalLLMProvider } from "../../../core/services/external_llm";
@@ -269,6 +270,12 @@ async function saveAndReprocessAll() {
   } finally {
     savingSettings.value = false;
   }
+}
+
+const { exportProject: exportProjectFn } = useProjectExport();
+
+async function exportProject() {
+  if (project.value) await exportProjectFn(project.value);
 }
 </script>
 
@@ -532,6 +539,10 @@ async function saveAndReprocessAll() {
         <Button @click="router.push(`/project/${id}/epics`)">
           <Icon icon="lucide:list-checks" />
           Ver Épicos
+        </Button>
+        <Button variant="outline" @click="exportProject()">
+          <Icon icon="lucide:download" />
+          Exportar
         </Button>
       </div>
 
