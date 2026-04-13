@@ -85,54 +85,64 @@ export class HandleProjectEpics implements UseCase<
     const effectiveModel = project.model ?? model;
 
     if (project.projectStatus[keyOnProject] !== "SUCCESS") {
-      try {
-        await this.updateProjectStatus.execute({
-          project,
-          keyOnProject,
-          status: "DOING",
-        });
+      const MAX_RETRIES = 2;
 
-        project = await this.getProject.execute(input.id);
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 0)
+          await new Promise((r) => setTimeout(r, 1500 * attempt));
 
-        const context: string = Array.isArray(keyOfInput)
-          ? keyOfInput.map((key) => project[key]).join("\n")
-          : project[keyOfInput];
-
-        const result = await this.handleArtifactWithTool.execute({
-          context,
-          toolDefinition,
-          general_instructions: `Você deve retornar os resultados no seguinte idioma: ${project.lang}`,
-          model: effectiveModel,
-          promptRef,
-          lang: project.lang,
-        });
-
-        const _result: StarterProjectEpic[] = JSON.parse(result[0]).epics;
-
-        for (const epic of _result) {
-          const { description, name, features } = epic;
-
-          await this.attachEpicOnProject.execute({
-            description,
-            name,
-            features,
-            projectId: project.id,
+        try {
+          await this.updateProjectStatus.execute({
+            project,
+            keyOnProject,
+            status: "DOING",
           });
+
+          project = await this.getProject.execute(input.id);
+
+          const context: string = Array.isArray(keyOfInput)
+            ? keyOfInput.map((key) => project[key]).join("\n")
+            : project[keyOfInput];
+
+          const result = await this.handleArtifactWithTool.execute({
+            context,
+            toolDefinition,
+            general_instructions: `Você deve retornar os resultados no seguinte idioma: ${project.lang}`,
+            model: effectiveModel,
+            promptRef,
+            lang: project.lang,
+          });
+
+          const _result: StarterProjectEpic[] = JSON.parse(result[0]).epics;
+
+          for (const epic of _result) {
+            const { description, name, features } = epic;
+
+            await this.attachEpicOnProject.execute({
+              description,
+              name,
+              features,
+              projectId: project.id,
+            });
+          }
+
+          await this.updateProjectStatus.execute({
+            project,
+            keyOnProject,
+            status: "SUCCESS",
+          });
+
+          break;
+        } catch (error) {
+          console.error(`[epics:${keyOnProject}] tentativa ${attempt + 1} falhou:`, error);
+          if (attempt === MAX_RETRIES) {
+            await this.updateProjectStatus.execute({
+              project,
+              keyOnProject,
+              status: "FAILURE",
+            });
+          }
         }
-
-        await this.updateProjectStatus.execute({
-          project,
-          keyOnProject,
-          status: "SUCCESS",
-        });
-      } catch (error) {
-        console.error(error);
-
-        await this.updateProjectStatus.execute({
-          project,
-          keyOnProject,
-          status: "FAILURE",
-        });
       }
     }
 
