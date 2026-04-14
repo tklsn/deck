@@ -28,7 +28,7 @@ function projectRank(title: string): string {
 }
 
 function projectFrame(project: StarterProjectRecord) {
-  return resolveProjectFrame({ ...project, title: project.title });
+  return resolveProjectFrame(project);
 }
 
 function projectCardStyle(project: StarterProjectRecord) {

@@ -170,12 +170,8 @@ const frameIcon = ref("");
 const frameColor = ref("");
 const frameTheme = ref<ProjectFrameTheme>("default");
 
-const projectFrame = computed(() =>
-  resolveProjectFrame(project.value ? { ...project.value, title: project.value.title } : undefined),
-);
-const hasFrameCustomization = computed(() =>
-  hasProjectFrameCustomization(project.value ? { ...project.value, title: project.value.title } : undefined),
-);
+const projectFrame = computed(() => resolveProjectFrame(project.value));
+const hasFrameCustomization = computed(() => hasProjectFrameCustomization(project.value));
 
 const previewFrame = computed(() =>
   resolveProjectFrame({
@@ -186,6 +182,12 @@ const previewFrame = computed(() =>
     frameTheme: frameTheme.value,
   }),
 );
+
+function frameBarBackgroundColor(frame: { theme: ProjectFrameTheme; color: string }): string | undefined {
+  if (frame.theme === "default") return undefined;
+  if (frame.theme === "solid") return frame.color;
+  return `${frame.color}1a`;
+}
 
 async function tryListModels(
   p: "ollama" | "lmstudio",
@@ -355,7 +357,7 @@ async function exportProject() {
           class="flex items-center justify-between px-3 py-2 border-b border-border/80"
           :class="projectFrame.theme === 'solid' ? 'text-white' : ''"
           :style="{
-            backgroundColor: projectFrame.theme === 'default' ? undefined : projectFrame.theme === 'solid' ? projectFrame.color : `${projectFrame.color}1a`,
+            backgroundColor: frameBarBackgroundColor(projectFrame),
           }"
         >
           <div class="flex items-center gap-2 text-sm font-medium">
@@ -518,7 +520,7 @@ async function exportProject() {
                 class="flex items-center justify-between px-3 py-2 text-sm"
                 :class="previewFrame.theme === 'solid' ? 'text-white' : ''"
                 :style="{
-                  backgroundColor: previewFrame.theme === 'default' ? undefined : previewFrame.theme === 'solid' ? previewFrame.color : `${previewFrame.color}1a`,
+                  backgroundColor: frameBarBackgroundColor(previewFrame),
                 }"
               >
                 <div class="flex items-center gap-2">
