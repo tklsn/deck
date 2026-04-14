@@ -15,8 +15,10 @@ export interface ProjectFrameConfig {
   theme: ProjectFrameTheme;
 }
 
-const DEFAULT_FRAME_COLOR = "#64748b";
-const DEFAULT_FRAME_ICON = "lucide:monitor";
+const DEFAULT_FRAME = {
+  color: "#64748b",
+  icon: "lucide:monitor",
+} as const;
 
 function getFrameTitleWithFallback(project?: ProjectFrameRecord | null): string {
   return (project?.frameTitle ?? "").trim() || (project?.title ?? "").trim() || "Sistema";
@@ -42,8 +44,8 @@ function isTheme(value?: string): value is ProjectFrameTheme {
 export function resolveProjectFrame(project?: ProjectFrameRecord | null): ProjectFrameConfig {
   return {
     title: getFrameTitleWithFallback(project),
-    icon: (project?.frameIcon ?? "").trim() || DEFAULT_FRAME_ICON,
-    color: normalizeHexColor(project?.frameColor) ?? DEFAULT_FRAME_COLOR,
+    icon: (project?.frameIcon ?? "").trim() || DEFAULT_FRAME.icon,
+    color: normalizeHexColor(project?.frameColor) ?? DEFAULT_FRAME.color,
     theme: isTheme(project?.frameTheme) ? project.frameTheme : "default",
   };
 }

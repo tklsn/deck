@@ -189,8 +189,17 @@ const previewFrame = computed(() =>
 function frameBarBackgroundColor(frame: { theme: ProjectFrameTheme; color: string }): string | undefined {
   if (frame.theme === "default") return undefined;
   if (frame.theme === "solid") return frame.color;
-  // 1a (hex alpha) = ~10% opacity.
+  // 1a (hex alpha) = approximately 10% opacity.
   return `${frame.color}1a`;
+}
+
+function currentFramePayload() {
+  return normalizeProjectFrameForStorage({
+    title: frameTitle.value,
+    icon: frameIcon.value,
+    color: frameColor.value,
+    theme: frameTheme.value,
+  });
 }
 
 async function tryListModels(
@@ -274,16 +283,10 @@ async function openSettings() {
 async function saveSettings() {
   savingSettings.value = true;
   try {
-    const framePayload = normalizeProjectFrameForStorage({
-      title: frameTitle.value,
-      icon: frameIcon.value,
-      color: frameColor.value,
-      theme: frameTheme.value,
-    });
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
-      ...framePayload,
+      ...currentFramePayload(),
     });
   } finally {
     savingSettings.value = false;
@@ -293,16 +296,10 @@ async function saveSettings() {
 async function saveAndRetry() {
   savingSettings.value = true;
   try {
-    const framePayload = normalizeProjectFrameForStorage({
-      title: frameTitle.value,
-      icon: frameIcon.value,
-      color: frameColor.value,
-      theme: frameTheme.value,
-    });
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
-      ...framePayload,
+      ...currentFramePayload(),
     });
     service.handleProject(id);
     showSettings.value = false;
@@ -314,16 +311,10 @@ async function saveAndRetry() {
 async function saveAndReprocessAll() {
   savingSettings.value = true;
   try {
-    const framePayload = normalizeProjectFrameForStorage({
-      title: frameTitle.value,
-      icon: frameIcon.value,
-      color: frameColor.value,
-      theme: frameTheme.value,
-    });
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
-      ...framePayload,
+      ...currentFramePayload(),
     });
     await service.reprocessAll(id);
     showSettings.value = false;
