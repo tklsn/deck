@@ -79,7 +79,8 @@ export abstract class BaseHandleStarterProject {
           const context: string = Array.isArray(keyOfInput)
             ? keyOfInput
                 .map((key) => current[key as keyof StarterProject] as string)
-                .join("\n")
+                .filter(Boolean)
+                .join("\n\n")
             : (current[keyOfInput as keyof StarterProject] as string);
 
           const result = await processStep({

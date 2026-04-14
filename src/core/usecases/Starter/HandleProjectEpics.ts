@@ -69,7 +69,10 @@ export class HandleProjectEpics implements UseCase<
           project = await this.getProject.execute(input.id);
 
           const context: string = Array.isArray(keyOfInput)
-            ? keyOfInput.map((key) => project[key]).join("\n")
+            ? keyOfInput
+                .map((key) => project[key])
+                .filter(Boolean)
+                .join("\n\n")
             : project[keyOfInput];
 
           const result = await this.handleArtifactWithTool.execute({

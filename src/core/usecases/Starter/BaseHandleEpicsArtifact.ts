@@ -52,7 +52,13 @@ export abstract class BaseHandleEpicsArtifact {
           epic = await this.getProjectEpic.execute({ epicId: item.id });
 
           const context: string = Array.isArray(keyOfInput)
-            ? keyOfInput.map((key) => epic[key]).join("\n")
+            ? keyOfInput
+                .map((key) => {
+                  const val = epic[key];
+                  return Array.isArray(val) ? val.join("\n") : val;
+                })
+                .filter(Boolean)
+                .join("\n\n")
             : epic[keyOfInput];
 
           await processEpic(epic, context);
