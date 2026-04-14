@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, safeStorage, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, safeStorage, shell } from "electron";
 import pkg from "electron-updater";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -80,7 +80,7 @@ ipcMain.handle("safe-storage:decrypt", (_event, ciphertext: string): string => {
 });
 
 app.whenReady().then(() => {
-  // Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(null);
   createMainWindow();
   initAutoUpdater();
 
