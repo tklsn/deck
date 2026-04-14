@@ -27,12 +27,15 @@ export const prompts: PromptsMap = {
   },
   "genius:classroom:lession-essentials": {
       "parameters": {
-          "context": {
+          "language": {
+              "type": "string"
+          },
+          "text": {
               "type": "string"
           }
       },
       "prompts": {
-          "header": "indique três pontos essenciais, em ${language}, para se aprofundar no tema ${text}"
+          "header": "indique três pontos essenciais, em %{language}%, para se aprofundar no tema %{text}%"
       }
   },
   "genius:classroom:lession-planner": {
