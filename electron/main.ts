@@ -1,8 +1,8 @@
 import { app, BrowserWindow, ipcMain, Menu, safeStorage, shell } from "electron";
 import pkg from "electron-updater";
-const { autoUpdater } = pkg;
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+const { autoUpdater } = pkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +62,8 @@ ipcMain.handle(
     headers: Record<string, string>,
   ): Promise<unknown> => {
     const res = await fetch(url, { headers });
-    if (!res.ok) throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+    if (!res.ok)
+      throw new Error(`Request failed: ${res.status} ${res.statusText}`);
     return res.json();
   },
 );

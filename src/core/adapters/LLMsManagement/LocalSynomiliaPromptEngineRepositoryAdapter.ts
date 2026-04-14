@@ -1,21 +1,8 @@
 import type { Parameters, Prompts } from "../../domain/Prompt";
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
 import type { FunctionDefinition } from "../../types/tool";
-import promptsData from "../../../../prompts.json";
+import { prompts as promptsData, type PromptEntry } from "../../../../prompts";
 import { PROMPT_TOOL_DEFINITIONS } from "./LocalSynomiliaToolDefinitions";
-
-interface RawPromptEntry {
-  key: string;
-  value: string;
-}
-
-interface RawPromptValue {
-  parameters: Record<string, { type: string }>;
-  prompts: {
-    header: string;
-    loop?: string[];
-  };
-}
 
 /**
  * Substitutes %{param}% placeholders in a template string.
@@ -53,22 +40,17 @@ function stripMarkdownInstructions(text: string): string {
 /**
  * Local adapter for the Synomilia prompt engine.
  *
- * Reads prompts directly from the bundled prompts.json. Prompts are stripped of markdown
+ * Reads prompts directly from the bundled prompts.ts. Prompts are stripped of markdown
  * formatting instructions — structured output is enforced via tool calling
  * through getToolDefinition().
  */
 export class LocalSynomiliaPromptEngineRepositoryAdapter
   implements PromptEngineRepositoryPort
 {
-  private readonly registry: Map<string, RawPromptValue>;
+  private readonly registry: Map<string, PromptEntry>;
 
   constructor() {
-    this.registry = new Map(
-      (promptsData as RawPromptEntry[]).map((entry) => [
-        entry.key,
-        JSON.parse(entry.value) as RawPromptValue,
-      ]),
-    );
+    this.registry = new Map(Object.entries(promptsData));
   }
 
   async getPrompt(
@@ -112,7 +94,7 @@ export class LocalSynomiliaPromptEngineRepositoryAdapter
   async getParams(promptReference: string): Promise<Parameters> {
     const entry = this.registry.get(promptReference);
     if (!entry) throw new Error(`Prompt not found: ${promptReference}`);
-    return entry.parameters as unknown as Parameters;
+    return entry.parameters as Parameters;
   }
 
   /**
