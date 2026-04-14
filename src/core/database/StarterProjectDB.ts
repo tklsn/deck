@@ -1,6 +1,9 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { AIStatus } from '../domain/AIStatus';
+import type { FrameConfig } from '../domain/StarterProject/StarterProject';
 import type { TaskStatus } from '../domain/TaskStatus';
+
+export type { FrameConfig };
 
 export interface StarterProjectRecord {
   id: string;
@@ -10,6 +13,7 @@ export interface StarterProjectRecord {
   lang?: string;
   provider?: string;
   model?: string;
+  frameConfig?: FrameConfig;
   expandedPrompt?: string;
   requirementDocument?: string;
   projectPlan?: string;
@@ -81,6 +85,14 @@ starterProjectDB.version(1).stores({
 });
 
 starterProjectDB.version(2).stores({
+  starterProjects: 'id, userId',
+  starterProjectStatuses: 'id, &projectId',
+  starterProjectEpics: 'id, projectId',
+  starterProjectEpicStatuses: 'id, &epicId',
+  starterProjectUserStories: 'id, epicId',
+});
+
+starterProjectDB.version(3).stores({
   starterProjects: 'id, userId',
   starterProjectStatuses: 'id, &projectId',
   starterProjectEpics: 'id, projectId',
