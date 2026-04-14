@@ -19,9 +19,10 @@ const DEFAULT_FRAME = {
   color: "#64748b",
   icon: "lucide:monitor",
 } as const;
+const DEFAULT_FRAME_TITLE = "Sistema";
 
 function getFrameTitleWithFallback(project?: ProjectFrameRecord | null): string {
-  return (project?.frameTitle ?? "").trim() || (project?.title ?? "").trim() || "Sistema";
+  return (project?.frameTitle ?? "").trim() || (project?.title ?? "").trim() || DEFAULT_FRAME_TITLE;
 }
 
 /**

@@ -189,7 +189,7 @@ const previewFrame = computed(() =>
 function frameBarBackgroundColor(frame: { theme: ProjectFrameTheme; color: string }): string | undefined {
   if (frame.theme === "default") return undefined;
   if (frame.theme === "solid") return frame.color;
-  // 1a (hex alpha) = approximately 10% opacity.
+  // 1a (hex alpha) = approximately 10.2% opacity.
   return `${frame.color}1a`;
 }
 

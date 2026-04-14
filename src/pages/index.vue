@@ -34,7 +34,7 @@ function projectFrame(project: StarterProjectRecord) {
 function projectCardStyle(project: StarterProjectRecord) {
   if (!hasProjectFrameCustomization(project)) return undefined;
   return {
-    // 66 (hex alpha) = approximately 40% opacity.
+    // 66 (hex alpha) = exactly 40% opacity.
     borderColor: `${projectFrame(project).color}66`,
   };
 }
