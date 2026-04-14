@@ -11,4 +11,8 @@ export interface StarterProject extends ProjectBase<StarterProjectStatus> {
   epics?: StarterProjectEpic[];
   provider?: string;
   model?: string;
+  frameTitle?: string;
+  frameIcon?: string;
+  frameColor?: string;
+  frameTheme?: "default" | "soft" | "solid";
 }
