@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Back card (dark slate, rotated left) -->
+  <rect x="60" y="45" width="80" height="110" rx="11"
+    fill="#334155" stroke="#475569" stroke-width="1.5"
+    transform="rotate(-12 100 155)" />
+  <!-- Middle card (indigo, slightly rotated) -->
+  <rect x="60" y="45" width="80" height="110" rx="11"
+    fill="#6366f1" stroke="#818cf8" stroke-width="1.5"
+    transform="rotate(-5 100 155)" />
+  <!-- Front card (near white) -->
+  <rect x="60" y="45" width="80" height="110" rx="11"
+    fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
+  <!-- Diamond symbol centered on front card -->
+  <path
+    d="M 100,68
+           C 100,68 103,88 122,98
+           C 122,98 103,108 100,128
+           C 100,128 97,108 78,98
+           C 78,98 97,88 100,68 Z"
+    fill="#4f46e5" />
+  <!-- Corner rank top-left -->
+  <text x="69" y="64"
+    font-family="ui-sans-serif, system-ui, -apple-system, sans-serif"
+    font-size="13" font-weight="700" fill="#4f46e5">D</text>
+  <!-- Corner rank bottom-right (rotated 180°) -->
+  <text x="131" y="155"
+    font-family="ui-sans-serif, system-ui, -apple-system, sans-serif"
+    font-size="13" font-weight="700" fill="#4f46e5"
+    transform="rotate(180 131 146)">D</text>
+</svg>

@@ -69,6 +69,7 @@
   "build": {
     "productName": "deck",
     "appId": "br.com.tksn.deck",
+    "icon": "build/icon.png",
     "asar": true,
     "directories": {
       "output": "release"
