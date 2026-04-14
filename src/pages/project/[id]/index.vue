@@ -147,10 +147,10 @@ const showSettings = ref(false);
 const savingSettings = ref(false);
 
 const providers = ref([
-  { value: "ollama" as ProviderValue, label: "Ollama", enabled: false },
-  { value: "lmstudio" as ProviderValue, label: "LM Studio", enabled: false },
-  { value: "openai" as ProviderValue, label: "OpenAI", enabled: false },
-  { value: "anthropic" as ProviderValue, label: "Anthropic", enabled: false },
+  { value: "ollama" as ProviderValue, label: "Ollama", icon: "lucide:layers", enabled: false },
+  { value: "lmstudio" as ProviderValue, label: "LM Studio", icon: "lucide:layers", enabled: false },
+  { value: "openai" as ProviderValue, label: "OpenAI", icon: "simple-icons:openai", enabled: false },
+  { value: "anthropic" as ProviderValue, label: "Anthropic", icon: "simple-icons:anthropic", enabled: false },
 ]);
 
 const settingsProvider = ref<ProviderValue>("ollama");
@@ -158,6 +158,9 @@ const settingsModel = ref<string>("");
 const availableModels = ref<LocalLLMModel[]>([]);
 const loadingModels = ref(false);
 const detectingProviders = ref(false);
+const selectedProvider = computed(() =>
+  providers.value.find((p) => p.value === settingsProvider.value),
+);
 
 async function tryListModels(
   p: "ollama" | "lmstudio",
@@ -332,7 +335,12 @@ async function exportProject() {
               <label class="text-sm font-medium">Provedor de IA</label>
               <Select v-model="settingsProvider" :disabled="detectingProviders">
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar provedor" />
+                  <SelectValue placeholder="Selecionar provedor">
+                    <div v-if="selectedProvider" class="flex items-center gap-2">
+                      <Icon :icon="selectedProvider.icon" class="h-4 w-4" />
+                      <span>{{ selectedProvider.label }}</span>
+                    </div>
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
@@ -341,7 +349,10 @@ async function exportProject() {
                     :value="option.value"
                     :disabled="!option.enabled"
                   >
-                    <span>{{ option.label }}</span>
+                    <div class="flex items-center gap-2">
+                      <Icon :icon="option.icon" class="h-4 w-4" />
+                      <span>{{ option.label }}</span>
+                    </div>
                     <span
                       v-if="!option.enabled"
                       class="text-muted-foreground ml-1 text-xs"

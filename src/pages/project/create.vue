@@ -22,6 +22,7 @@ import { LocalLLMModelsAdapter } from "@/core/adapters/LLMsManagement/LocalLLMMo
 import { getApiKey } from "@/core/services/provider_settings";
 import { StarterProjectService } from "@/core/services/starter_project";
 import { toTypedSchema } from "@vee-validate/zod";
+import { Icon } from "@iconify/vue";
 import { useForm } from "vee-validate";
 import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -65,25 +66,25 @@ const providers = ref([
     value: "ollama" as ProviderValue,
     label: "Ollama",
     enabled: false,
-    icon: "https://ollama.com/public/icon-16x16.png",
+    icon: "lucide:layers",
   },
   {
     value: "lmstudio" as ProviderValue,
     label: "LM Studio",
     enabled: false,
-    icon: "https://lmstudio.ai/favicon.ico",
+    icon: "lucide:layers",
   },
   {
     value: "openai" as ProviderValue,
     label: "OpenAI",
     enabled: false,
-    icon: "https://openai.com/favicon.ico",
+    icon: "simple-icons:openai",
   },
   {
     value: "anthropic" as ProviderValue,
     label: "Anthropic",
     enabled: false,
-    icon: "https://www.anthropic.com/favicon.ico",
+    icon: "simple-icons:anthropic",
   },
 ]);
 
@@ -261,11 +262,7 @@ const onSubmit = handleSubmit(async (_values) => {
               >
                 <SelectValue placeholder="Selecionar">
                   <div v-if="provider" class="flex items-center gap-2">
-                    <img
-                      :src="selectedProvider()?.icon"
-                      alt=""
-                      class="h-4 w-4 rounded-sm"
-                    />
+                    <Icon :icon="selectedProvider()?.icon ?? 'lucide:layers'" class="h-4 w-4" />
                     <span>{{ selectedProvider()?.label }}</span>
                   </div>
                 </SelectValue>
@@ -278,12 +275,7 @@ const onSubmit = handleSubmit(async (_values) => {
                   :disabled="!option.enabled"
                 >
                   <div class="flex items-center gap-2">
-                    <img
-                      v-if="option.icon"
-                      :src="option.icon"
-                      alt=""
-                      class="h-4 w-4 rounded-sm"
-                    />
+                    <Icon :icon="option.icon" class="h-4 w-4" />
                     <span>{{ option.label }}</span>
                     <span
                       v-if="!option.enabled"
