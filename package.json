@@ -14,7 +14,7 @@
     "app:dir": "pnpm run build:web && pnpm run build:main && electron-builder --dir",
     "app:dist": "pnpm run build",
     "changelog": "changelogen",
-    "release": "changelogen --release && git push --follow-tags"
+    "release": "pnpm run build:web && pnpm run build:main && changelogen --release && git push --follow-tags"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
