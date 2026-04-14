@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.3.1
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.3.0...v1.3.1)
+
+### 🩹 Fixes
+
+- Update release script to include build steps before changelogen ([0c6f36c](https://github.com/tklsn/deck/commit/0c6f36c))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.3.0
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.2.3...v1.3.0)
