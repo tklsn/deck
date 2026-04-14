@@ -7,6 +7,7 @@ import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngi
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
 import { GetProjectById } from "../_Project/GetProjectById";
 import { UpdateProjectStatus } from "../_Project/UpdateProjectStatus";
+import { langInstruction } from "../_shared/Common";
 
 export type ArtifactStepParams = ArtifactInput & { keyOnProject: string };
 
@@ -45,21 +46,20 @@ export abstract class BaseHandleStarterProject {
   }
 
   protected async _runArtifactLoop(
-    _project: StarterProject,
-    _customModel: string | undefined,
+    project: StarterProject,
+    customModel: string | undefined,
     processStep: (params: ArtifactStepParams) => Promise<string>,
   ): Promise<StarterProject> {
-    let project = await this.getProject.execute(_project.id!);
+    let current = await this.getProject.execute(project.id!);
 
-    const _artifacts =
-      await this.artifactEngineRepository.getArtifactPromptRef();
+    const artifacts = await this.artifactEngineRepository.getArtifactPromptRef();
 
     const MAX_RETRIES = 2;
 
-    for (const resource of _artifacts) {
+    for (const resource of artifacts) {
       const { keyOnProject, model, promptRef, keyOfInput } = resource;
 
-      if (project.projectStatus[keyOnProject] === "SUCCESS") continue;
+      if (current.projectStatus[keyOnProject] === "SUCCESS") continue;
 
       let success = false;
 
@@ -69,35 +69,34 @@ export abstract class BaseHandleStarterProject {
 
         try {
           await this.updateProjectStatus.execute({
-            project,
+            project: current,
             keyOnProject,
             status: "DOING",
           });
 
-          project = await this.getProject.execute(_project.id!);
+          current = await this.getProject.execute(project.id!);
 
           const context: string = Array.isArray(keyOfInput)
             ? keyOfInput
-                .map((key) => project[key as keyof StarterProject] as string)
-                .join("\n")
-            : (project[keyOfInput as keyof StarterProject] as string);
-
-          const general_instructions = `Você deve retornar os resultados no seguinte idioma: ${project.lang}`;
+                .map((key) => current[key as keyof StarterProject] as string)
+                .filter(Boolean)
+                .join("\n\n")
+            : (current[keyOfInput as keyof StarterProject] as string);
 
           const result = await processStep({
             context,
-            general_instructions,
-            model: _customModel ?? model,
+            general_instructions: langInstruction(current.lang),
+            model: customModel ?? model,
             promptRef,
-            lang: project.lang,
+            lang: current.lang,
             keyOnProject,
           });
 
-          project[keyOnProject as keyof StarterProject] = result as never;
-          await this.projectRepository.update(project);
+          current[keyOnProject as keyof StarterProject] = result as never;
+          await this.projectRepository.update(current);
 
           await this.updateProjectStatus.execute({
-            project,
+            project: current,
             keyOnProject,
             status: "SUCCESS",
           });
@@ -108,7 +107,7 @@ export abstract class BaseHandleStarterProject {
           console.error(`[artifact:${keyOnProject}] tentativa ${attempt + 1} falhou:`, error);
           if (attempt === MAX_RETRIES) {
             await this.updateProjectStatus.execute({
-              project,
+              project: current,
               keyOnProject,
               status: "FAILURE",
             });
@@ -119,6 +118,6 @@ export abstract class BaseHandleStarterProject {
       if (!success) break;
     }
 
-    return await this.getProject.execute(_project.id!);
+    return await this.getProject.execute(project.id!);
   }
 }

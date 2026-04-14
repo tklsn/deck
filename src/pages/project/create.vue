@@ -172,13 +172,7 @@ const onSubmit = handleSubmit(async (_values) => {
     userId: "local",
   };
 
-  const isLocal = ["ollama", "lmstudio"].includes(_values.provider);
-
-  const project = await __service.createProject(
-    values,
-    isLocal,
-    true,
-  );
+  const project = await __service.createProject(values);
 
   if (project) {
     router.push(`/project/${project.id}`);

@@ -3,19 +3,16 @@ import type { StarterProjectEpicStatus } from "../../domain/StarterProject/Start
 import type { EpicsRepositoryPort } from "../../ports/Project/EpicsRepositoryPort";
 import type { UseCase } from "../_shared/Common";
 
-type projectEpicRepository = EpicsRepositoryPort<
-  StarterProjectEpic,
-  StarterProjectEpicStatus
->;
+type EpicsRepository = EpicsRepositoryPort<StarterProjectEpic, StarterProjectEpicStatus>;
 
-export class AttachEpicOnProject implements UseCase<StarterProjectEpic, void> {
-  private projectEpicRepository: projectEpicRepository;
+export class CreateEpicOnProject implements UseCase<StarterProjectEpic, void> {
+  private projectEpicRepository: EpicsRepository;
 
-  constructor(projectEpicRepository: projectEpicRepository) {
+  constructor(projectEpicRepository: EpicsRepository) {
     this.projectEpicRepository = projectEpicRepository;
   }
 
-  async execute(input: StarterProjectEpic): Promise<void> | Promise<void> {
+  async execute(input: StarterProjectEpic): Promise<void> {
     await this.projectEpicRepository.save(input);
   }
 }

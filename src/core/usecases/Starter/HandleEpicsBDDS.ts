@@ -6,6 +6,7 @@ import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngi
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
 import type { FunctionDefinition } from "../../types/tool";
 import type { UseCase } from "../_shared/Common";
+import { langInstruction } from "../_shared/Common";
 import { HandleArtifactWithTool } from "../Chat/HandleArtifactWithTool";
 import { BaseHandleEpicsArtifact } from "./BaseHandleEpicsArtifact";
 
@@ -21,8 +22,6 @@ export class HandleEpicsBDDS
   extends BaseHandleEpicsArtifact
   implements UseCase<HandleProjectEpicInput, void>
 {
-  private llmsRepository: LLMSEngineRepositoryPort;
-  private promptEngineRepository: PromptEngineRepositoryPort;
   private handleArtifact: HandleArtifactWithTool;
 
   constructor(
@@ -34,12 +33,7 @@ export class HandleEpicsBDDS
     promptEngineRepository: PromptEngineRepositoryPort,
   ) {
     super(projectEpicRepository);
-    this.llmsRepository = llmsRepository;
-    this.promptEngineRepository = promptEngineRepository;
-    this.handleArtifact = new HandleArtifactWithTool(
-      this.llmsRepository,
-      this.promptEngineRepository,
-    );
+    this.handleArtifact = new HandleArtifactWithTool(llmsRepository, promptEngineRepository);
   }
 
   async execute({
@@ -56,11 +50,11 @@ export class HandleEpicsBDDS
       input,
       keyOnProject,
       keyOfInput,
-      async (actualProject, context) => {
+      async (epic, context) => {
         const result = await this.handleArtifact.execute({
           context,
           toolDefinition,
-          general_instructions: `Você deve retornar os resultados no seguinte idioma: ${lang}`,
+          general_instructions: langInstruction(lang),
           model: effectiveModel,
           promptRef,
           lang,
@@ -69,8 +63,8 @@ export class HandleEpicsBDDS
         // The prompt has a 2-step loop; take the last non-empty result since
         // step 2 runs with the context of step 1 and produces the complete output.
         const bddJson = result.filter(Boolean).pop() ?? result[0];
-        actualProject[keyOnProject] = bddJson;
-        await this.projectEpicRepository.update(actualProject);
+        epic[keyOnProject] = bddJson;
+        await this.projectEpicRepository.update(epic);
       },
     );
   }

@@ -1,25 +1,14 @@
 import { starterProjectDB } from "../../database/StarterProjectDB";
 import type { AIStatus } from "../../domain/AIStatus";
-import type { ArtifactResource } from "../../domain/ArtifactResource";
 import type { StarterProject } from "../../domain/StarterProject/StarterProject";
 import type { StarterProjectStatus } from "../../domain/StarterProject/StarterProjectStatus";
 import type { ProjectRepositoryPort } from "../../ports/Project/ProjectRepositoryPort";
-import { StarterProjectArtifactEngineAdapter } from "./ArtifactEngineAdapter";
 
 export class ProjectRepositoryAdapter implements ProjectRepositoryPort<
   StarterProject,
   StarterProjectStatus
 > {
-  private db: typeof starterProjectDB;
-  private artifactEngine: StarterProjectArtifactEngineAdapter;
-
-  constructor(
-    db: typeof starterProjectDB = starterProjectDB,
-    artifactEngine: StarterProjectArtifactEngineAdapter = new StarterProjectArtifactEngineAdapter(),
-  ) {
-    this.db = db;
-    this.artifactEngine = artifactEngine;
-  }
+  constructor(private db = starterProjectDB) {}
 
   async save(project: StarterProject): Promise<StarterProject> {
     const { id: _, projectStatus: __, epics: ___, ...rest } = project;
@@ -149,10 +138,4 @@ export class ProjectRepositoryAdapter implements ProjectRepositoryPort<
       .first();
   }
 
-  async getResources(id: string): Promise<ArtifactResource[]> {
-    const project = await this.db.starterProjects.get(id);
-    const artifactsAvailable =
-      await this.artifactEngine.getArtifactResource(project);
-    return artifactsAvailable;
-  }
 }

@@ -9,15 +9,15 @@ export class HandleArtifactWithTool implements UseCase<
   ArtifactInput & { toolDefinition: FunctionDefinition },
   any[]
 > {
-  private llmsEngineRepository: LLMSEngineRepositoryPort;
   private promptEngineRepository: PromptEngineRepositoryPort;
+  private handleChat: HandleChatWithTool;
 
   constructor(
     llmsEngineRepository: LLMSEngineRepositoryPort,
     promptEngineRepository: PromptEngineRepositoryPort,
   ) {
-    this.llmsEngineRepository = llmsEngineRepository;
     this.promptEngineRepository = promptEngineRepository;
+    this.handleChat = new HandleChatWithTool(llmsEngineRepository);
   }
 
   async execute<T>({
@@ -33,25 +33,18 @@ export class HandleArtifactWithTool implements UseCase<
       { lang, ...fromT },
       promptRef,
     );
+    const chatRoll = await this.handleChat.execute({ prompts, model, toolDefinition });
 
-    const handleChat = new HandleChatWithTool(this.llmsEngineRepository);
+    const result = chatRoll
+      .filter((m) => m.role === "assistant")
+      .map((m) => m.content);
 
-    const chatRoll = await handleChat.execute({
-      prompts,
-      model,
-      toolDefinition,
-    });
-
-    const ended = chatRoll
-      .filter((message) => message.role === `assistant`)
-      .map((message) => message.content);
-
-    if (!ended.length || ended.every((e) => !String(e ?? "").trim())) {
+    if (!result.length || result.every((e) => !String(e ?? "").trim())) {
       throw new Error(
         "Resposta vazia do modelo — verifique se o modelo está carregado e tente novamente.",
       );
     }
 
-    return ended;
+    return result;
   }
 }

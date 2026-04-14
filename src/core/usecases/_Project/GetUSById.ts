@@ -1,6 +1,5 @@
 import type { StarterProjectUserStory } from "../../domain/StarterProject/StarterProjectUserStory";
 import type { UserStoriesRepositoryPort } from "../../ports/Project/UserStoriesRepositoryPort";
-import type { CacheStoragePort } from "../../ports/UtilsAndLLMs/CacheStoragePort";
 import type { UseCase } from "../_shared/Common";
 
 interface GetUSByIdInput {
@@ -15,10 +14,8 @@ export class GetUSById implements UseCase<
 
   constructor(
     usRepository: UserStoriesRepositoryPort<StarterProjectUserStory>,
-    cacheRepository: CacheStoragePort,
   ) {
     this.usRepository = usRepository;
-    this.cacheRepository = cacheRepository;
   }
 
   async execute({ usId }: GetUSByIdInput): Promise<StarterProjectUserStory> {

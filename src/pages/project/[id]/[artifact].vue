@@ -75,29 +75,9 @@ const project = useLiveQuery(
 
 const content = computed(() => project.value?.[artifactKey] ?? "");
 
-const isStreaming = computed(
+const isProcessing = computed(
   () => projectStatus.value?.[artifactKey] === "DOING",
 );
-
-// TODO: reconstruir funcionalidade de edição de artefato
-// const editing = ref(false);
-// const editValue = ref("");
-// const saving = ref(false);
-
-// function startEdit() {
-//   editValue.value = content.value;
-//   editing.value = true;
-// }
-
-// async function saveEdit() {
-//   saving.value = true;
-//   try {
-//     await service.updateProject(id, { [artifactKey]: editValue.value });
-//     editing.value = false;
-//   } finally {
-//     saving.value = false;
-//   }
-// }
 </script>
 
 <template>
@@ -132,7 +112,7 @@ const isStreaming = computed(
         <div class="flex items-center gap-3">
           <h1 class="text-2xl font-bold">{{ label }}</h1>
           <Badge
-            v-if="isStreaming"
+            v-if="isProcessing"
             variant="secondary"
             class="flex items-center gap-1"
           >
@@ -140,29 +120,6 @@ const isStreaming = computed(
             Gerando...
           </Badge>
         </div>
-
-        <!-- TODO: reconstruir funcionalidade de edição de artefato -->
-        <!-- <div class="flex gap-2">
-          <template v-if="editing">
-            <Button variant="outline" size="sm" @click="editing = false">
-              <Icon icon="lucide:x" />
-              Cancelar
-            </Button>
-            <Button size="sm" :disabled="saving" @click="saveEdit">
-              <Icon icon="lucide:save" />
-              {{ saving ? "Salvando..." : "Salvar" }}
-            </Button>
-          </template>
-          <Button
-            v-else-if="!isStreaming"
-            variant="outline"
-            size="sm"
-            @click="startEdit"
-          >
-            <Icon icon="lucide:pencil" />
-            Editar
-          </Button>
-        </div> -->
       </div>
 
       <Separator />

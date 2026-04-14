@@ -8,10 +8,11 @@ import type { ProjectRepositoryPort } from "../../ports/Project/ProjectRepositor
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
 import type { FunctionDefinition } from "../../types/tool";
-import { AttachEpicOnProject } from "../_Project/AttachEpicOnProject";
+import { CreateEpicOnProject } from "../_Project/CreateEpicOnProject";
 import { GetProjectById } from "../_Project/GetProjectById";
 import { UpdateProjectStatus } from "../_Project/UpdateProjectStatus";
 import type { UseCase } from "../_shared/Common";
+import { langInstruction } from "../_shared/Common";
 import { HandleArtifactWithTool } from "../Chat/HandleArtifactWithTool";
 
 interface HandleProjectInput {
@@ -27,51 +28,18 @@ export class HandleProjectEpics implements UseCase<
   private getProject: GetProjectById<StarterProject, StarterProjectStatus>;
   private updateProjectStatus: UpdateProjectStatus<StarterProjectStatus>;
   private handleArtifactWithTool: HandleArtifactWithTool;
-  private attachEpicOnProject: AttachEpicOnProject;
+  private attachEpicOnProject: CreateEpicOnProject;
 
-  private llmsRepository: LLMSEngineRepositoryPort;
-  private projectRepository: ProjectRepositoryPort<
-    StarterProject,
-    StarterProjectStatus
-  >;
-  private promptEngineRepository: PromptEngineRepositoryPort;
-  private projectEpicRepository: EpicsRepositoryPort<
-    StarterProjectEpic,
-    StarterProjectEpicStatus
-  >;
   constructor(
     llmsRepository: LLMSEngineRepositoryPort,
-    projectRepository: ProjectRepositoryPort<
-      StarterProject,
-      StarterProjectStatus
-    >,
+    projectRepository: ProjectRepositoryPort<StarterProject, StarterProjectStatus>,
     promptEngineRepository: PromptEngineRepositoryPort,
-    projectEpicRepository: EpicsRepositoryPort<
-      StarterProjectEpic,
-      StarterProjectEpicStatus
-    >,
+    projectEpicRepository: EpicsRepositoryPort<StarterProjectEpic, StarterProjectEpicStatus>,
   ) {
-    this.llmsRepository = llmsRepository;
-    this.projectRepository = projectRepository;
-    this.promptEngineRepository = promptEngineRepository;
-    this.projectEpicRepository = projectEpicRepository;
-
-    this.getProject = new GetProjectById<StarterProject, StarterProjectStatus>(
-      this.projectRepository,
-    );
-
-    this.updateProjectStatus = new UpdateProjectStatus<StarterProjectStatus>(
-      this.projectRepository,
-    );
-
-    this.handleArtifactWithTool = new HandleArtifactWithTool(
-      this.llmsRepository,
-      this.promptEngineRepository,
-    );
-
-    this.attachEpicOnProject = new AttachEpicOnProject(
-      this.projectEpicRepository,
-    );
+    this.getProject = new GetProjectById<StarterProject, StarterProjectStatus>(projectRepository);
+    this.updateProjectStatus = new UpdateProjectStatus<StarterProjectStatus>(projectRepository);
+    this.handleArtifactWithTool = new HandleArtifactWithTool(llmsRepository, promptEngineRepository);
+    this.attachEpicOnProject = new CreateEpicOnProject(projectEpicRepository);
   }
 
   async execute({
@@ -101,23 +69,24 @@ export class HandleProjectEpics implements UseCase<
           project = await this.getProject.execute(input.id);
 
           const context: string = Array.isArray(keyOfInput)
-            ? keyOfInput.map((key) => project[key]).join("\n")
+            ? keyOfInput
+                .map((key) => project[key])
+                .filter(Boolean)
+                .join("\n\n")
             : project[keyOfInput];
 
           const result = await this.handleArtifactWithTool.execute({
             context,
             toolDefinition,
-            general_instructions: `Você deve retornar os resultados no seguinte idioma: ${project.lang}`,
+            general_instructions: langInstruction(project.lang),
             model: effectiveModel,
             promptRef,
             lang: project.lang,
           });
 
-          const _result: StarterProjectEpic[] = JSON.parse(result[0]).epics;
+          const epics: StarterProjectEpic[] = JSON.parse(result[0]).epics;
 
-          for (const epic of _result) {
-            const { description, name, features } = epic;
-
+          for (const { description, name, features } of epics) {
             await this.attachEpicOnProject.execute({
               description,
               name,

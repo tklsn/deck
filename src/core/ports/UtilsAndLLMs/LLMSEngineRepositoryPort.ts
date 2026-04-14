@@ -14,9 +14,4 @@ export interface LLMSEngineRepositoryPort {
     toolName: string,
   ) => Promise<string>;
 
-  handleChatStream?: (
-    messages: ChatCompletionMessageParam[],
-    model: string,
-    onChunk: (chunk: string) => void,
-  ) => Promise<string>;
 }

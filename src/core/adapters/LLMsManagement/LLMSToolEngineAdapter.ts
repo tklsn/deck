@@ -19,27 +19,43 @@ function handleRequiredObject(
 
 function handleProperties(
   properties: Record<string, any>,
-  required?: string[],
+  required?: string[] | boolean,
 ): Record<string, any> {
+  if (properties === null) {
+    return { type: "null" };
+  }
+
   if (typeof properties === "object") {
     if (Array.isArray(properties)) {
+      const firstItem = properties[0];
       return {
         type: "array",
-        items: handleProperties(properties[0], required),
+        items: firstItem === undefined ? {} : handleProperties(firstItem, true),
       };
     } else {
       const propertiesKeys = Object.keys(properties);
-      const _required =
-        required && required.filter((key) => propertiesKeys.includes(key));
       const propertiesObject = propertiesKeys.reduce(
         (acc: Record<string, any>, key) => {
-          acc[key] = handleProperties(properties[key], required);
+          const value = properties[key];
+          const nestedRequired =
+            value &&
+            typeof value === "object" &&
+            !Array.isArray(value)
+              ? Object.keys(value)
+              : undefined;
+
+          acc[key] = handleProperties(value, nestedRequired);
 
           return acc;
         },
         {},
       );
-      return handleRequiredObject(propertiesObject, _required);
+      const normalizedRequired =
+        typeof required === "boolean"
+          ? propertiesKeys
+          : required ?? propertiesKeys;
+
+      return handleRequiredObject(propertiesObject, normalizedRequired);
     }
   }
   if (typeof properties === "string") {

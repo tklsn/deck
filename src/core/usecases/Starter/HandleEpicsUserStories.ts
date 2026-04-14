@@ -7,8 +7,9 @@ import type { UserStoriesRepositoryPort } from "../../ports/Project/UserStoriesR
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
 import type { FunctionDefinition } from "../../types/tool";
-import { AttachUSOnEpic } from "../_Project/AttachUSOnEpic";
+import { CreateUserStoryOnEpic } from "../_Project/CreateUserStoryOnEpic";
 import type { UseCase } from "../_shared/Common";
+import { langInstruction } from "../_shared/Common";
 import { HandleArtifactWithTool } from "../Chat/HandleArtifactWithTool";
 import { BaseHandleEpicsArtifact } from "./BaseHandleEpicsArtifact";
 
@@ -24,10 +25,8 @@ export class HandleEpicsUserStories
   extends BaseHandleEpicsArtifact
   implements UseCase<HandleProjectEpicInput, void>
 {
-  private llmsRepository: LLMSEngineRepositoryPort;
-  private promptEngineRepository: PromptEngineRepositoryPort;
   private handleArtifact: HandleArtifactWithTool;
-  private attachUSOnEpic: AttachUSOnEpic;
+  private attachUSOnEpic: CreateUserStoryOnEpic;
 
   constructor(
     llmsRepository: LLMSEngineRepositoryPort,
@@ -39,13 +38,8 @@ export class HandleEpicsUserStories
     projectUserStoriesRepository: UserStoriesRepositoryPort<StarterProjectUserStory>,
   ) {
     super(projectEpicRepository);
-    this.llmsRepository = llmsRepository;
-    this.promptEngineRepository = promptEngineRepository;
-    this.handleArtifact = new HandleArtifactWithTool(
-      this.llmsRepository,
-      this.promptEngineRepository,
-    );
-    this.attachUSOnEpic = new AttachUSOnEpic(projectUserStoriesRepository);
+    this.handleArtifact = new HandleArtifactWithTool(llmsRepository, promptEngineRepository);
+    this.attachUSOnEpic = new CreateUserStoryOnEpic(projectUserStoriesRepository);
   }
 
   async execute({
@@ -62,30 +56,25 @@ export class HandleEpicsUserStories
       input,
       keyOnProject,
       keyOfInput,
-      async (actualProject, context) => {
+      async (epic, context) => {
         const result = await this.handleArtifact.execute({
           context,
           toolDefinition,
-          general_instructions: `Você deve retornar os resultados no seguinte idioma: ${lang}`,
+          general_instructions: langInstruction(lang),
           model: effectiveModel,
           promptRef,
           lang,
         });
 
-        const _result: StarterProjectUserStory[] = JSON.parse(
-          result[0],
-        ).user_stories;
+        const userStories: StarterProjectUserStory[] = JSON.parse(result[0]).user_stories;
 
-        for (const userStory of _result) {
-          const { description, title, acceptanceCriteria, subtasks } =
-            userStory;
-
+        for (const { description, title, acceptanceCriteria, subtasks } of userStories) {
           await this.attachUSOnEpic.execute({
             description,
             title,
             acceptanceCriteria,
             subtasks,
-            epicId: actualProject.id,
+            epicId: epic.id,
           });
         }
       },

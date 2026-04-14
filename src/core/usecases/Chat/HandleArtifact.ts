@@ -6,15 +6,17 @@ import { HandleChat } from "./HandleChat";
 import { HandleArtifactWithTool } from "./HandleArtifactWithTool";
 
 export class HandleArtifact implements UseCase<ArtifactInput, string> {
-  private llmsEngineRepository: LLMSEngineRepositoryPort;
   private promptEngineRepository: PromptEngineRepositoryPort;
+  private handleWithTool: HandleArtifactWithTool;
+  private handleChat: HandleChat;
 
   constructor(
     llmsEngineRepository: LLMSEngineRepositoryPort,
     promptEngineRepository: PromptEngineRepositoryPort,
   ) {
-    this.llmsEngineRepository = llmsEngineRepository;
     this.promptEngineRepository = promptEngineRepository;
+    this.handleWithTool = new HandleArtifactWithTool(llmsEngineRepository, promptEngineRepository);
+    this.handleChat = new HandleChat(llmsEngineRepository);
   }
 
   async execute({
@@ -27,49 +29,45 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
     const toolDefinition = this.promptEngineRepository.getToolDefinition(promptRef);
 
     if (toolDefinition) {
-      const handleArtifactWithTool = new HandleArtifactWithTool(
-        this.llmsEngineRepository,
-        this.promptEngineRepository,
-      );
-      const results = await handleArtifactWithTool.execute({
-        context,
-        general_instructions,
-        promptRef,
-        model,
-        lang,
-        toolDefinition,
-      });
-      const ended = results.filter(Boolean).join("\n");
-      if (!ended.trim()) {
+      const result = (
+        await this.handleWithTool.execute({
+          context,
+          general_instructions,
+          promptRef,
+          model,
+          lang,
+          toolDefinition,
+        })
+      )
+        .filter(Boolean)
+        .join("\n");
+      if (!result.trim()) {
         throw new Error(
           "Resposta vazia do modelo — verifique se o modelo está carregado e tente novamente.",
         );
       }
-      return ended;
+      return result;
     }
 
     const prompts = await this.promptEngineRepository.getPrompt(
       { context, general_instructions, lang },
       promptRef,
     );
+    const chatRoll = await this.handleChat.execute({ prompts, model });
 
-    const handleChat = new HandleChat(this.llmsEngineRepository);
-
-    const chatRoll = await handleChat.execute({ prompts, model });
-
-    const ended = chatRoll
-      .filter((message) => message.role === `assistant`)
-      .map((message) => message.content)
-      .join(`\n`)
-      .replace(`[...]`, "\n")
+    const result = chatRoll
+      .filter((m) => m.role === "assistant")
+      .map((m) => m.content)
+      .join("\n")
+      .replace("[...]", "\n")
       .toString();
 
-    if (!ended.trim()) {
+    if (!result.trim()) {
       throw new Error(
         "Resposta vazia do modelo — verifique se o modelo está carregado e tente novamente.",
       );
     }
 
-    return ended;
+    return result;
   }
 }
