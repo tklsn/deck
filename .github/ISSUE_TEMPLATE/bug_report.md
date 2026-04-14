@@ -1,7 +1,7 @@
 ---
 name: "Relatar um Bug"
 about: "Relate um bug que você encontrou"
-title: "[Bug]"
+title: "fix: "
 labels: ["bug"]
 assignees: []
 ---
