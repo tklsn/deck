@@ -1,6 +1,34 @@
 # Changelog
 
 
+## v1.3.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.2.3...v1.3.0)
+
+### 🚀 Enhancements
+
+- Adicionar ícone e nome nos ambientes desktop ([e303873](https://github.com/tklsn/deck/commit/e303873))
+- **#13:** Remove streams + remove dead code + simplify logic ([b016895](https://github.com/tklsn/deck/commit/b016895))
+- **#13:** Refactor input handling and improve context generation for epic and user story processing ([40b5af4](https://github.com/tklsn/deck/commit/40b5af4))
+
+### 🩹 Fixes
+
+- **windows-dev:** Improve command execution handling in electron-dev script ([4edc340](https://github.com/tklsn/deck/commit/4edc340))
+- **windows-dev:** Update prompts ([597489c](https://github.com/tklsn/deck/commit/597489c))
+- **windows dev:** Update prompts.ts ([619cec6](https://github.com/tklsn/deck/commit/619cec6))
+- **windows-dev:** Restore hidden application menu behavior ([e1b4f19](https://github.com/tklsn/deck/commit/e1b4f19))
+
+### 🏡 Chore
+
+- **release:** V1.2.3 ([a7cdc39](https://github.com/tklsn/deck/commit/a7cdc39))
+- Add GitHub issue templates ([7a2b8e3](https://github.com/tklsn/deck/commit/7a2b8e3))
+- Add feature and exploratory issue templates ([1a2ae94](https://github.com/tklsn/deck/commit/1a2ae94))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+- Claude <noreply@anthropic.com>
+
 ## v1.2.3
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.2.2...v1.2.3)
