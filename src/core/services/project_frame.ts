@@ -18,6 +18,14 @@ export interface ProjectFrameConfig {
 const DEFAULT_FRAME_COLOR = "#64748b";
 const DEFAULT_FRAME_ICON = "lucide:monitor";
 
+function getFrameTitleWithFallback(project?: ProjectFrameRecord | null): string {
+  return (project?.frameTitle ?? "").trim() || (project?.title ?? "").trim() || "Sistema";
+}
+
+/**
+ * Normalizes an input color to the canonical #rrggbb format.
+ * Returns undefined for invalid values.
+ */
 function normalizeHexColor(input?: string): string | undefined {
   const value = (input ?? "").trim();
   const withHash = value.startsWith("#") ? value : `#${value}`;
@@ -33,7 +41,7 @@ function isTheme(value?: string): value is ProjectFrameTheme {
 
 export function resolveProjectFrame(project?: ProjectFrameRecord | null): ProjectFrameConfig {
   return {
-    title: (project?.frameTitle ?? "").trim() || (project?.title ?? "").trim() || "Sistema",
+    title: getFrameTitleWithFallback(project),
     icon: (project?.frameIcon ?? "").trim() || DEFAULT_FRAME_ICON,
     color: normalizeHexColor(project?.frameColor) ?? DEFAULT_FRAME_COLOR,
     theme: isTheme(project?.frameTheme) ? project.frameTheme : "default",

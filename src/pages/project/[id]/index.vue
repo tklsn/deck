@@ -183,9 +183,13 @@ const previewFrame = computed(() =>
   }),
 );
 
+/**
+ * Maps frame theme to top-bar background color.
+ */
 function frameBarBackgroundColor(frame: { theme: ProjectFrameTheme; color: string }): string | undefined {
   if (frame.theme === "default") return undefined;
   if (frame.theme === "solid") return frame.color;
+  // 1a (hex alpha) = ~10% opacity.
   return `${frame.color}1a`;
 }
 
