@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.3.2
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.3.1...v1.3.2)
+
+### 🩹 Fixes
+
+- Update release script to include version tagging and force push ([adbcdfa](https://github.com/tklsn/deck/commit/adbcdfa))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.3.1
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.3.0...v1.3.1)
