@@ -1,5 +1,4 @@
 import type { AIStatus } from "../../domain/AIStatus";
-import type { ArtifactResource } from "../../domain/ArtifactResource";
 
 export interface EpicsRepositoryPort<B, S> {
   save: (project: B) => Promise<B>;
@@ -14,5 +13,4 @@ export interface EpicsRepositoryPort<B, S> {
     status: AIStatus,
   ) => Promise<S>;
   getStatus: (id: string) => Promise<S>;
-  getResources?: (id: string) => Promise<ArtifactResource[]>;
 }

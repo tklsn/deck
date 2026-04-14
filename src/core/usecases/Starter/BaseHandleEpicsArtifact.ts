@@ -33,49 +33,45 @@ export abstract class BaseHandleEpicsArtifact {
   ): Promise<void> {
     const MAX_RETRIES = 2;
 
-    for (const epic of epics) {
-      let actualProject = await this.getProjectEpic.execute({
-        epicId: epic.id!,
-      });
+    for (const item of epics) {
+      let epic = await this.getProjectEpic.execute({ epicId: item.id! });
 
-      if (actualProject.epicStatus[keyOnProject] !== "SUCCESS") {
-        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-          if (attempt > 0)
-            await new Promise((r) => setTimeout(r, 1500 * attempt));
+      if (epic.epicStatus[keyOnProject] === "SUCCESS") continue;
 
-          try {
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (attempt > 0)
+          await new Promise((r) => setTimeout(r, 1500 * attempt));
+
+        try {
+          await this.updateProjectStatus.execute({
+            project: epic,
+            keyOnProject,
+            status: "DOING",
+          });
+
+          epic = await this.getProjectEpic.execute({ epicId: item.id });
+
+          const context: string = Array.isArray(keyOfInput)
+            ? keyOfInput.map((key) => epic[key]).join("\n")
+            : epic[keyOfInput];
+
+          await processEpic(epic, context);
+
+          await this.updateProjectStatus.execute({
+            project: epic,
+            keyOnProject,
+            status: "SUCCESS",
+          });
+
+          break;
+        } catch (error) {
+          console.error(`[epic:${keyOnProject}] tentativa ${attempt + 1} falhou:`, error);
+          if (attempt === MAX_RETRIES) {
             await this.updateProjectStatus.execute({
-              project: actualProject,
+              project: epic,
               keyOnProject,
-              status: "DOING",
+              status: "FAILURE",
             });
-
-            actualProject = await this.getProjectEpic.execute({
-              epicId: epic.id,
-            });
-
-            const context: string = Array.isArray(keyOfInput)
-              ? keyOfInput.map((key) => actualProject[key]).join("\n")
-              : actualProject[keyOfInput];
-
-            await processEpic(actualProject, context);
-
-            await this.updateProjectStatus.execute({
-              project: actualProject,
-              keyOnProject,
-              status: "SUCCESS",
-            });
-
-            break;
-          } catch (error) {
-            console.error(`[epic:${keyOnProject}] tentativa ${attempt + 1} falhou:`, error);
-            if (attempt === MAX_RETRIES) {
-              await this.updateProjectStatus.execute({
-                project: actualProject,
-                keyOnProject,
-                status: "FAILURE",
-              });
-            }
           }
         }
       }

@@ -36,30 +36,6 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
     return "";
   }
 
-  async handleChatStream(
-    messages: ChatCompletionMessageParam[],
-    model: string,
-    onChunk: (chunk: string) => void,
-  ): Promise<string> {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
-      const stream = await this.client.chat.completions.create(
-        { model, messages, temperature: 1, stream: true },
-        { timeout: LLM_TIMEOUT_MS },
-      );
-      let fullContent = "";
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content ?? "";
-        if (content) {
-          onChunk(content);
-          fullContent += content;
-        }
-      }
-      if (fullContent.trim()) return fullContent;
-    }
-    return "";
-  }
-
   async handleChatWithTools(
     messages: ChatCompletionMessageParam[],
     model: string,
