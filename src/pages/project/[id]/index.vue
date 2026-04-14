@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@iconify/vue";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ExternalLLMModelsAdapter } from "../../../core/adapters/LLMsManagement/ExternalLLMModelsAdapter";
 import { LocalLLMModelsAdapter } from "../../../core/adapters/LLMsManagement/LocalLLMModelsAdapter";
@@ -152,14 +152,10 @@ function applyFrameOverlay(cfg: { color: string; symbolColor: string }) {
 watch(
   project,
   (p) => {
-    applyFrameOverlay(p?.frameConfig ?? DEFAULT_FRAME);
+    if (p?.frameConfig) applyFrameOverlay(p.frameConfig);
   },
   { immediate: true },
 );
-
-onUnmounted(() => {
-  applyFrameOverlay(DEFAULT_FRAME);
-});
 
 // ─── Settings panel ────────────────────────────────────────────────────────
 
