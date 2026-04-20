@@ -6,6 +6,10 @@ import { useRouter } from "vue-router";
 import { useLiveQuery } from "../core/composables/useLiveQuery";
 import type { StarterProjectRecord } from "../core/database/StarterProjectDB";
 import { starterProjectDB } from "../core/database/StarterProjectDB";
+import {
+  hasProjectFrameCustomization,
+  resolveProjectFrame,
+} from "../core/services/project_frame";
 
 const LOCAL_USER_ID = "local";
 const router = useRouter();
@@ -21,6 +25,18 @@ const projects = useLiveQuery(
 
 function projectRank(title: string): string {
   return title.trim().charAt(0).toUpperCase() || "?";
+}
+
+function projectFrame(project: StarterProjectRecord) {
+  return resolveProjectFrame(project);
+}
+
+function projectCardStyle(project: StarterProjectRecord) {
+  if (!hasProjectFrameCustomization(project)) return undefined;
+  return {
+    // 66 (hex alpha) = exactly 40% opacity.
+    borderColor: `${projectFrame(project).color}66`,
+  };
 }
 </script>
 
@@ -52,6 +68,7 @@ function projectRank(title: string): string {
         v-for="project in projects"
         :key="project.id"
         class="group relative flex aspect-[5/7] cursor-pointer flex-col overflow-hidden rounded-xl border border-border/60 bg-card ring-1 ring-border/30 shadow-md transition-all duration-200 hover:shadow-xl hover:scale-[1.02] hover:ring-border/60 active:scale-[0.99]"
+        :style="projectCardStyle(project)"
         @click="router.push(`/project/${project.id}`)"
       >
         <!-- Top-left rank + icon -->
@@ -62,8 +79,9 @@ function projectRank(title: string): string {
             {{ projectRank(project.title) }}
           </span>
           <Icon
-            icon="lucide:layers"
+            :icon="projectFrame(project).icon"
             class="h-3.5 w-3.5 text-muted-foreground/50"
+            :style="hasProjectFrameCustomization(project) ? { color: projectFrame(project).color } : undefined"
           />
         </div>
 
@@ -73,16 +91,18 @@ function projectRank(title: string): string {
         >
           <div
             class="flex h-12 w-12 items-center justify-center rounded-full bg-muted/60 ring-1 ring-border/30 transition-colors group-hover:bg-primary/10 group-hover:ring-primary/30"
+            :style="hasProjectFrameCustomization(project) ? { backgroundColor: `${projectFrame(project).color}1a` } : undefined"
           >
             <Icon
-              icon="lucide:layers"
+              :icon="projectFrame(project).icon"
               class="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors"
+              :style="hasProjectFrameCustomization(project) ? { color: projectFrame(project).color } : undefined"
             />
           </div>
           <p
             class="text-sm font-semibold leading-snug tracking-tight text-foreground line-clamp-3"
           >
-            {{ project.title }}
+            {{ projectFrame(project).title }}
           </p>
         </div>
 

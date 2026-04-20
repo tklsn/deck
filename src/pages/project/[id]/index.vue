@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,12 @@ import { starterProjectDB } from "../../../core/database/StarterProjectDB";
 import type { LocalLLMModel } from "../../../core/ports/UtilsAndLLMs/LocalLLMModelsPort";
 import type { ExternalLLMProvider } from "../../../core/services/external_llm";
 import { getApiKey } from "../../../core/services/provider_settings";
+import {
+  hasProjectFrameCustomization,
+  normalizeProjectFrameForStorage,
+  resolveProjectFrame,
+  type ProjectFrameTheme,
+} from "../../../core/services/project_frame";
 import { StarterProjectService } from "../../../core/services/starter_project";
 
 const route = useRoute();
@@ -158,6 +165,42 @@ const settingsModel = ref<string>("");
 const availableModels = ref<LocalLLMModel[]>([]);
 const loadingModels = ref(false);
 const detectingProviders = ref(false);
+const frameTitle = ref("");
+const frameIcon = ref("");
+const frameColor = ref("");
+const frameTheme = ref<ProjectFrameTheme>("default");
+
+const projectFrame = computed(() => resolveProjectFrame(project.value));
+const hasFrameCustomization = computed(() => hasProjectFrameCustomization(project.value));
+
+const previewFrame = computed(() =>
+  resolveProjectFrame({
+    title: project.value?.title,
+    frameTitle: frameTitle.value,
+    frameIcon: frameIcon.value,
+    frameColor: frameColor.value,
+    frameTheme: frameTheme.value,
+  }),
+);
+
+/**
+ * Maps frame theme to top-bar background color.
+ */
+function frameBarBackgroundColor(frame: { theme: ProjectFrameTheme; color: string }): string | undefined {
+  if (frame.theme === "default") return undefined;
+  if (frame.theme === "solid") return frame.color;
+  // 1a (hex alpha) = approximately 10.2% opacity.
+  return `${frame.color}1a`;
+}
+
+function currentFramePayload() {
+  return normalizeProjectFrameForStorage({
+    title: frameTitle.value,
+    icon: frameIcon.value,
+    color: frameColor.value,
+    theme: frameTheme.value,
+  });
+}
 
 async function tryListModels(
   p: "ollama" | "lmstudio",
@@ -206,6 +249,11 @@ async function openSettings() {
     settingsModel.value = project.value.model;
   }
 
+  frameTitle.value = project.value?.frameTitle ?? "";
+  frameIcon.value = project.value?.frameIcon ?? "";
+  frameColor.value = project.value?.frameColor ?? "";
+  frameTheme.value = project.value?.frameTheme ?? "default";
+
   const [ollamaModels, lmstudioModels] = await Promise.all([
     tryListModels("ollama"),
     tryListModels("lmstudio"),
@@ -238,6 +286,7 @@ async function saveSettings() {
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
+      ...currentFramePayload(),
     });
   } finally {
     savingSettings.value = false;
@@ -250,6 +299,7 @@ async function saveAndRetry() {
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
+      ...currentFramePayload(),
     });
     service.handleProject(id);
     showSettings.value = false;
@@ -264,6 +314,7 @@ async function saveAndReprocessAll() {
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
+      ...currentFramePayload(),
     });
     await service.reprocessAll(id);
     showSettings.value = false;
@@ -296,7 +347,46 @@ async function exportProject() {
     </Breadcrumb>
 
     <template v-if="project">
-      <div class="flex items-start justify-between gap-4">
+      <div v-if="hasFrameCustomization" class="rounded-xl border border-border overflow-hidden bg-card">
+        <div
+          class="flex items-center justify-between px-3 py-2 border-b border-border/80"
+          :class="projectFrame.theme === 'solid' ? 'text-white' : ''"
+          :style="{
+            backgroundColor: frameBarBackgroundColor(projectFrame),
+          }"
+        >
+          <div class="flex items-center gap-2 text-sm font-medium">
+            <Icon :icon="projectFrame.icon" class="h-4 w-4" />
+            <span>{{ projectFrame.title }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="h-2.5 w-2.5 rounded-full bg-red-400/90" />
+            <span class="h-2.5 w-2.5 rounded-full bg-amber-400/90" />
+            <span class="h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
+          </div>
+        </div>
+
+        <div class="flex items-start justify-between gap-4 p-4">
+          <div class="flex flex-col gap-1">
+            <h1 class="text-2xl font-bold">{{ project.title }}</h1>
+            <p v-if="project.createdAt" class="text-muted-foreground text-sm">
+              Criado em
+              {{ new Date(project.createdAt).toLocaleDateString("pt-BR") }}
+            </p>
+            <p class="text-muted-foreground mt-1 text-sm">{{ project.prompt }}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            class="shrink-0"
+            @click="showSettings ? (showSettings = false) : openSettings()"
+          >
+            <Icon icon="lucide:settings" />
+            Configurações
+          </Button>
+        </div>
+      </div>
+      <div v-else class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-1">
           <h1 class="text-2xl font-bold">{{ project.title }}</h1>
           <p v-if="project.createdAt" class="text-muted-foreground text-sm">
@@ -382,6 +472,65 @@ async function exportProject() {
               >
                 Nenhum modelo encontrado.
               </p>
+            </div>
+          </div>
+
+          <div class="space-y-3 rounded-lg border border-border/70 p-3">
+            <p class="text-sm font-medium">Frame do sistema</p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium">Título do frame</label>
+                <Input v-model="frameTitle" placeholder="Padrão: título do projeto" />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium">Ícone (Iconify)</label>
+                <Input v-model="frameIcon" placeholder="Ex: lucide:monitor" />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium">Cor do frame</label>
+                <Input v-model="frameColor" placeholder="#64748b" />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium">Tema do frame</label>
+                <Select v-model="frameTheme">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar tema" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Padrão</SelectItem>
+                    <SelectItem value="soft">Suave</SelectItem>
+                    <SelectItem value="solid">Sólido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div
+              class="rounded-md border border-border/70 overflow-hidden"
+            >
+              <div
+                class="flex items-center justify-between px-3 py-2 text-sm"
+                :class="previewFrame.theme === 'solid' ? 'text-white' : ''"
+                :style="{
+                  backgroundColor: frameBarBackgroundColor(previewFrame),
+                }"
+              >
+                <div class="flex items-center gap-2">
+                  <Icon :icon="previewFrame.icon" class="h-4 w-4" />
+                  <span class="font-medium">{{ previewFrame.title }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="h-2.5 w-2.5 rounded-full bg-red-400/90" />
+                  <span class="h-2.5 w-2.5 rounded-full bg-amber-400/90" />
+                  <span class="h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
+                </div>
+              </div>
+              <div class="p-3 text-xs text-muted-foreground">
+                Pré-visualização do frame customizado para este sistema.
+              </div>
             </div>
           </div>
 

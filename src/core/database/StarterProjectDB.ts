@@ -10,6 +10,10 @@ export interface StarterProjectRecord {
   lang?: string;
   provider?: string;
   model?: string;
+  frameTitle?: string;
+  frameIcon?: string;
+  frameColor?: string;
+  frameTheme?: "default" | "soft" | "solid";
   expandedPrompt?: string;
   requirementDocument?: string;
   projectPlan?: string;
