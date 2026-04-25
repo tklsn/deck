@@ -139,12 +139,32 @@ function isClickable(key: string): boolean {
   return s === "SUCCESS" || s === "DOING";
 }
 
+// ─── Frame customization ───────────────────────────────────────────────────
+
+const DEFAULT_FRAME = { color: "#ffffff", symbolColor: "#71717a" };
+
+function applyFrameOverlay(cfg: { color: string; symbolColor: string }) {
+  if (typeof window !== "undefined" && window.electronAPI) {
+    void window.electronAPI.setTitleBarOverlay(cfg);
+  }
+}
+
+watch(
+  project,
+  (p) => {
+    if (p?.frameConfig) applyFrameOverlay(p.frameConfig);
+  },
+  { immediate: true },
+);
+
 // ─── Settings panel ────────────────────────────────────────────────────────
 
 type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic";
 
 const showSettings = ref(false);
 const savingSettings = ref(false);
+const frameColor = ref(DEFAULT_FRAME.color);
+const frameSymbolColor = ref(DEFAULT_FRAME.symbolColor);
 
 const providers = ref([
   { value: "ollama" as ProviderValue, label: "Ollama", enabled: false },
@@ -205,6 +225,8 @@ async function openSettings() {
   if (project.value?.model) {
     settingsModel.value = project.value.model;
   }
+  frameColor.value = project.value?.frameConfig?.color ?? DEFAULT_FRAME.color;
+  frameSymbolColor.value = project.value?.frameConfig?.symbolColor ?? DEFAULT_FRAME.symbolColor;
 
   const [ollamaModels, lmstudioModels] = await Promise.all([
     tryListModels("ollama"),
@@ -238,6 +260,7 @@ async function saveSettings() {
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
+      frameConfig: { color: frameColor.value, symbolColor: frameSymbolColor.value },
     });
   } finally {
     savingSettings.value = false;
@@ -250,6 +273,7 @@ async function saveAndRetry() {
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
+      frameConfig: { color: frameColor.value, symbolColor: frameSymbolColor.value },
     });
     service.handleProject(id);
     showSettings.value = false;
@@ -264,6 +288,7 @@ async function saveAndReprocessAll() {
     await service.updateProject(id, {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
+      frameConfig: { color: frameColor.value, symbolColor: frameSymbolColor.value },
     });
     await service.reprocessAll(id);
     showSettings.value = false;
@@ -382,6 +407,37 @@ async function exportProject() {
               >
                 Nenhum modelo encontrado.
               </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          <!-- Frame customization -->
+          <div class="flex flex-col gap-3">
+            <p class="text-sm font-medium">Frame da janela</p>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs text-muted-foreground">Cor do fundo</label>
+                <div class="flex items-center gap-2">
+                  <input
+                    v-model="frameColor"
+                    type="color"
+                    class="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                  />
+                  <span class="text-xs text-muted-foreground font-mono">{{ frameColor }}</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs text-muted-foreground">Cor dos símbolos</label>
+                <div class="flex items-center gap-2">
+                  <input
+                    v-model="frameSymbolColor"
+                    type="color"
+                    class="h-8 w-8 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                  />
+                  <span class="text-xs text-muted-foreground font-mono">{{ frameSymbolColor }}</span>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -21,6 +21,12 @@ function createMainWindow() {
     width: 1200,
     height: 800,
     icon: path.join(__dirname, "../build/icon.png"),
+    titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#ffffff",
+      symbolColor: "#71717a",
+      height: 38,
+    },
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -66,6 +72,14 @@ ipcMain.handle(
     if (!res.ok)
       throw new Error(`Request failed: ${res.status} ${res.statusText}`);
     return res.json();
+  },
+);
+
+// Frame overlay IPC handler — update title bar colors per project
+ipcMain.handle(
+  "frame:set-overlay",
+  (_event, opts: { color: string; symbolColor: string }) => {
+    mainWindow?.setTitleBarOverlay(opts);
   },
 );
 

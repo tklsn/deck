@@ -2,6 +2,11 @@ import type { ProjectBase } from "../Project/ProjectBase";
 import type { StarterProjectEpic } from "./StarterProjectEpic";
 import type { StarterProjectStatus } from "./StarterProjectStatus";
 
+export interface FrameConfig {
+  color: string;
+  symbolColor: string;
+}
+
 export interface StarterProject extends ProjectBase<StarterProjectStatus> {
   expandedPrompt?: string;
   requirementDocument?: string;
@@ -11,4 +16,5 @@ export interface StarterProject extends ProjectBase<StarterProjectStatus> {
   epics?: StarterProjectEpic[];
   provider?: string;
   model?: string;
+  frameConfig?: FrameConfig;
 }

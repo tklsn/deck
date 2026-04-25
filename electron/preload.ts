@@ -19,4 +19,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Performs HTTP GET via the main process (Node.js) to bypass CORS restrictions.
   getJson: (url: string, headers: Record<string, string>): Promise<unknown> =>
     ipcRenderer.invoke("http:get-json", url, headers),
+  // Updates the native title bar overlay colors for per-project frame customization.
+  setTitleBarOverlay: (opts: { color: string; symbolColor: string }): Promise<void> =>
+    ipcRenderer.invoke("frame:set-overlay", opts),
 });
