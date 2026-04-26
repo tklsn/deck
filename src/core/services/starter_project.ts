@@ -20,6 +20,7 @@ import {
   userStoriesFinalTool,
 } from "../tools/StarterProjectToolDeclarations";
 import { PROMPT_TOOL_DEFINITIONS } from "../adapters/LLMsManagement/LocalSynomiliaToolDefinitions";
+import { isLikelySmallLocalModel } from "./artifact_generation";
 import { CreateStarterProject } from "../usecases/Starter/CreateProject";
 import { HandleEpicsBDDS } from "../usecases/Starter/HandleEpicsBDDS";
 import { HandleEpicsUserStories } from "../usecases/Starter/HandleEpicsUserStories";
@@ -234,7 +235,12 @@ export class StarterProjectService {
     } else if (provider === "anthropic") {
       llmRepo = new AnthropicRepositoryAdapter(getApiKey("anthropic") ?? "");
     } else {
-      llmRepo = new LocalLLMRepositoryAdapter({ provider });
+      llmRepo = new LocalLLMRepositoryAdapter({
+        provider,
+        toolCallStrategy: isLikelySmallLocalModel(project.model)
+          ? "auto"
+          : "tool_calling",
+      });
     }
 
     return { llmRepo, effectiveModel: project.model };

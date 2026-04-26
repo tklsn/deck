@@ -5,10 +5,14 @@ export const LOCAL_LLM_DEFAULTS = {
 
 export type LocalLLMProvider = keyof typeof LOCAL_LLM_DEFAULTS;
 
+export type LocalLLMToolCallStrategy = "tool_calling" | "structured_output" | "auto";
+
 export interface LocalLLMConfig {
   provider: LocalLLMProvider;
   baseURL?: string;
   apiKey?: string;
+  toolCallStrategy?: LocalLLMToolCallStrategy;
+  maxContextChars?: number;
 }
 
 export function resolveLocalLLMBaseURL(config: LocalLLMConfig): string {
