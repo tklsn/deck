@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.4.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.3.2...v1.4.0)
+
+### 🚀 Enhancements
+
+- **small-ollama-models:** Add resilient artifact generation fallback for small Ollama models ([dfa004b](https://github.com/tklsn/deck/commit/dfa004b))
+
+### 🩹 Fixes
+
+- Add concurrency settings to release workflow ([ef3f1b4](https://github.com/tklsn/deck/commit/ef3f1b4))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.3.2
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.3.1...v1.3.2)
