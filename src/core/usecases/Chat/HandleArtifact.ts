@@ -1,6 +1,12 @@
 import type { ArtifactInput } from "../../domain/ArtifactInput";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
+import {
+  buildArtifactTextFallbackPrompt,
+  isArtifactResultAcceptable,
+  isFallbackTextAcceptable,
+  supportsFreeTextArtifactFallback,
+} from "../../services/artifact_generation";
 import type { UseCase } from "../_shared/Common";
 import { HandleChat } from "./HandleChat";
 import { HandleArtifactWithTool } from "./HandleArtifactWithTool";
@@ -41,12 +47,40 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
       )
         .filter(Boolean)
         .join("\n");
-      if (!result.trim()) {
-        throw new Error(
-          "Resposta vazia do modelo — verifique se o modelo está carregado e tente novamente.",
-        );
+
+      if (isArtifactResultAcceptable(result, promptRef, toolDefinition)) {
+        return result;
       }
-      return result;
+
+      if (supportsFreeTextArtifactFallback(promptRef)) {
+        const prompts = await this.promptEngineRepository.getPrompt(
+          { context, general_instructions, lang },
+          promptRef,
+        );
+
+        const chatRoll = await this.handleChat.execute({
+          prompts: {
+            ...prompts,
+            header: buildArtifactTextFallbackPrompt(prompts.header),
+          },
+          model,
+        });
+
+        const fallback = chatRoll
+          .filter((m) => m.role === "assistant")
+          .map((m) => m.content)
+          .join("\n")
+          .replace("[...]", "\n")
+          .toString();
+
+        if (isFallbackTextAcceptable(fallback)) {
+          return fallback;
+        }
+      }
+
+      throw new Error(
+        "Resposta incompleta do modelo — o artefato nao atingiu completude minima.",
+      );
     }
 
     const prompts = await this.promptEngineRepository.getPrompt(

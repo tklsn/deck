@@ -72,7 +72,8 @@ export class LocalSynomiliaPromptEngineRepositoryAdapter
         "Seja extremamente detalhado e completo em todos os campos. " +
         "Preencha cada campo com profundidade máxima, use exemplos concretos, " +
         "evite respostas genéricas ou ilustrativas. " +
-        "Quanto mais informação relevante e específica, melhor.";
+        "Quanto mais informação relevante e específica, melhor. " +
+        "Nao devolva objeto parcial, campos vazios, listas vazias ou apenas o titulo da secao.";
 
       if (entry.prompts.loop?.length) {
         const loopHints = entry.prompts.loop
