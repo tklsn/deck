@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.5.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.4.0...v1.5.0)
+
+### 🚀 Enhancements
+
+- **#17:** Add OpenRouter as supported LLM provider ([5d12968](https://github.com/tklsn/deck/commit/5d12968))
+
+### 🩹 Fixes
+
+- **#17:** Broaden small-model detection and default local LLMs to auto strategy ([d900a1b](https://github.com/tklsn/deck/commit/d900a1b))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.4.0
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.3.2...v1.4.0)
