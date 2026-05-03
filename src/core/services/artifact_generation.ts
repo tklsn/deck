@@ -158,7 +158,14 @@ function isCanvasAcceptable(obj: JsonRecord): boolean {
 export function isLikelySmallLocalModel(model: string | undefined): boolean {
   if (!model) return false;
   const normalized = model.toLowerCase();
-  return /\b(350m|0\.[0-9]+b|1b)\b/.test(normalized);
+  if (/(?:^|[^a-z0-9.])[0-9]+m(?![a-z0-9])/.test(normalized)) return true;
+  const match = normalized.match(
+    /(?:^|[^a-z0-9.])([0-9]+(?:\.[0-9]+)?)b(?![a-z0-9])/,
+  );
+  if (!match) return false;
+  const size = match[1];
+  if (!size) return false;
+  return parseFloat(size) <= 4;
 }
 
 export function buildArtifactTextFallbackPrompt(header: string): string {
