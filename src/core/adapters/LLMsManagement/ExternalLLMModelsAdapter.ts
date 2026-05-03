@@ -15,6 +15,10 @@ interface AnthropicModelsResponse {
   data: Array<{ id: string; display_name?: string }>;
 }
 
+interface OpenRouterModelsResponse {
+  data: Array<{ id: string; name?: string }>;
+}
+
 async function mainProcessGet<T>(url: string, headers: Record<string, string>): Promise<T> {
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -34,7 +38,18 @@ export class ExternalLLMModelsAdapter implements LocalLLMModelsPort {
     if (this.provider === "anthropic") {
       return this._listAnthropicModels();
     }
+    if (this.provider === "openrouter") {
+      return this._listOpenRouterModels();
+    }
     return this._listOpenAICompatibleModels();
+  }
+
+  private async _listOpenRouterModels(): Promise<LocalLLMModel[]> {
+    const url = `${EXTERNAL_LLM_DEFAULTS.openrouter.url}models`;
+    const data = await mainProcessGet<OpenRouterModelsResponse>(url, {
+      Authorization: `Bearer ${this.apiKey}`,
+    });
+    return data.data.map((m) => ({ id: m.id, name: m.name ?? m.id }));
   }
 
   private async _listOpenAICompatibleModels(): Promise<LocalLLMModel[]> {
