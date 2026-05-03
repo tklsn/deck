@@ -35,7 +35,7 @@ const schema = z.object({
   title: z.string().min(3).max(100),
   prompt: z.string().min(3),
   lang: z.enum(["pt-BR", "en"]),
-  provider: z.enum(["ollama", "lmstudio", "openai", "anthropic"]),
+  provider: z.enum(["ollama", "lmstudio", "openai", "anthropic", "openrouter"]),
   model: z.string().optional(),
 });
 
@@ -58,7 +58,7 @@ const [lang, langAttrs] = defineField("lang");
 const [provider, providerAttrs] = defineField("provider");
 const [model, modelAttrs] = defineField("model");
 
-type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic";
+type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic" | "openrouter";
 
 const providers = ref([
   {
@@ -85,6 +85,12 @@ const providers = ref([
     enabled: false,
     icon: "https://www.anthropic.com/favicon.ico",
   },
+  {
+    value: "openrouter" as ProviderValue,
+    label: "OpenRouter",
+    enabled: false,
+    icon: "https://openrouter.ai/favicon.ico",
+  },
 ]);
 
 const availableModels = ref<LocalLLMModel[]>([]);
@@ -110,7 +116,7 @@ async function loadModels(p: string) {
   setFieldValue("model", "");
   try {
     let models: LocalLLMModel[];
-    if (p === "openai" || p === "anthropic") {
+    if (p === "openai" || p === "anthropic" || p === "openrouter") {
       const apiKey = getApiKey(p) ?? "";
       models = await new ExternalLLMModelsAdapter(p as ExternalLLMProvider, apiKey).listModels();
     } else {
@@ -145,7 +151,7 @@ onMounted(async () => {
   lmstudioEntry.enabled = lmstudioModels !== null;
 
   // Enable external providers based on stored API keys
-  for (const ext of ["openai", "anthropic"] as const) {
+  for (const ext of ["openai", "anthropic", "openrouter"] as const) {
     const entry = providers.value.find((p) => p.value === ext)!;
     entry.enabled = getApiKey(ext) !== null;
   }

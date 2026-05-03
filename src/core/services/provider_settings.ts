@@ -8,7 +8,7 @@ const _decryptedCache = new Map<string, string>();
 // Populated by the worker host via loadApiKeys() before any LLM call is made.
 const _memoryStore: Record<string, string> = {};
 
-const KNOWN_PROVIDERS = ["openai", "anthropic"] as const;
+const KNOWN_PROVIDERS = ["openai", "anthropic", "openrouter"] as const;
 
 // ─── encryption helpers ───────────────────────────────────────────────────────
 

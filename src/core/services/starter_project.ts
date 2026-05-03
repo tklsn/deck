@@ -1,6 +1,7 @@
 import { AnthropicRepositoryAdapter } from "../adapters/LLMsManagement/AnthropicRepositoryAdapter";
 import { LocalLLMRepositoryAdapter } from "../adapters/LLMsManagement/LocalLLMRepositoryAdapter";
 import { OpenAIRepositoryAdapter } from "../adapters/LLMsManagement/OpenAIRepositoryAdapter";
+import { OpenRouterRepositoryAdapter } from "../adapters/LLMsManagement/OpenRouterRepositoryAdapter";
 import { LocalSynomiliaPromptEngineRepositoryAdapter } from "../adapters/LLMsManagement/LocalSynomiliaPromptEngineRepositoryAdapter";
 import type { LLMSEngineRepositoryPort } from "../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import { getApiKey } from "../services/provider_settings";
@@ -20,7 +21,6 @@ import {
   userStoriesFinalTool,
 } from "../tools/StarterProjectToolDeclarations";
 import { PROMPT_TOOL_DEFINITIONS } from "../adapters/LLMsManagement/LocalSynomiliaToolDefinitions";
-import { isLikelySmallLocalModel } from "./artifact_generation";
 import { CreateStarterProject } from "../usecases/Starter/CreateProject";
 import { HandleEpicsBDDS } from "../usecases/Starter/HandleEpicsBDDS";
 import { HandleEpicsUserStories } from "../usecases/Starter/HandleEpicsUserStories";
@@ -33,7 +33,7 @@ import { GetUSByEpicId } from "../usecases/_Project/GetUSByEpicId";
 import { GetUSById } from "../usecases/_Project/GetUSById";
 import { UpdateProjectById } from "../usecases/_Project/UpdateProjectById";
 
-type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic";
+type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic" | "openrouter";
 
 export class StarterProjectService {
   private projectRepository: ProjectRepositoryAdapter;
@@ -204,6 +204,7 @@ export class StarterProjectService {
     const apiKeys: Record<string, string | null> = {
       openai: getApiKey("openai"),
       anthropic: getApiKey("anthropic"),
+      openrouter: getApiKey("openrouter"),
     };
     const worker = new Worker(
       new URL("@/workers/project-processor.worker.ts", import.meta.url),
@@ -234,12 +235,12 @@ export class StarterProjectService {
       llmRepo = new OpenAIRepositoryAdapter(getApiKey("openai") ?? "");
     } else if (provider === "anthropic") {
       llmRepo = new AnthropicRepositoryAdapter(getApiKey("anthropic") ?? "");
+    } else if (provider === "openrouter") {
+      llmRepo = new OpenRouterRepositoryAdapter(getApiKey("openrouter") ?? "");
     } else {
       llmRepo = new LocalLLMRepositoryAdapter({
         provider,
-        toolCallStrategy: isLikelySmallLocalModel(project.model)
-          ? "auto"
-          : "tool_calling",
+        toolCallStrategy: "auto",
       });
     }
 

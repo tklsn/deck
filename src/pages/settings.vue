@@ -59,6 +59,23 @@ const providers = ref<ProviderEntry[]>([
     showKey: false,
     saved: false,
   },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    description:
+      "Acesse centenas de modelos (Claude, GPT, Llama, etc.) com uma única chave.",
+    placeholder: "sk-or-v1-...",
+    keyPrefix: "sk-or-",
+    accent: "text-sky-500",
+    accentBg: "bg-sky-500/8 dark:bg-sky-500/10",
+    accentBorder: "border-sky-500/25",
+    icon: "simple-icons:openrouter",
+    models: ["Claude Sonnet 4.5", "GPT-5", "Llama 4", "+300 modelos"],
+    configured: false,
+    inputValue: "",
+    showKey: false,
+    saved: false,
+  },
 ]);
 
 const configuredCount = () => providers.value.filter((p) => p.configured).length;
