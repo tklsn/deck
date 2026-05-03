@@ -35,7 +35,7 @@ const schema = z.object({
   title: z.string().min(3).max(100),
   prompt: z.string().min(3),
   lang: z.enum(["pt-BR", "en"]),
-  provider: z.enum(["ollama", "lmstudio", "openai", "anthropic", "openrouter"]),
+  provider: z.enum(["ollama", "lmstudio", "foundry", "openai", "anthropic", "openrouter"]),
   model: z.string().optional(),
 });
 
@@ -58,7 +58,13 @@ const [lang, langAttrs] = defineField("lang");
 const [provider, providerAttrs] = defineField("provider");
 const [model, modelAttrs] = defineField("model");
 
-type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic" | "openrouter";
+type ProviderValue =
+  | "ollama"
+  | "lmstudio"
+  | "foundry"
+  | "openai"
+  | "anthropic"
+  | "openrouter";
 
 const providers = ref([
   {
@@ -72,6 +78,12 @@ const providers = ref([
     label: "LM Studio",
     enabled: false,
     icon: "https://lmstudio.ai/favicon.ico",
+  },
+  {
+    value: "foundry" as ProviderValue,
+    label: "Foundry Local",
+    enabled: false,
+    icon: "https://www.microsoft.com/favicon.ico",
   },
   {
     value: "openai" as ProviderValue,
@@ -101,7 +113,7 @@ const selectedProvider = () =>
   providers.value.find((p) => p.value === provider.value);
 
 async function tryListModels(
-  p: "ollama" | "lmstudio",
+  p: "ollama" | "lmstudio" | "foundry",
 ): Promise<LocalLLMModel[] | null> {
   try {
     return await new LocalLLMModelsAdapter({ provider: p }).listModels();
@@ -120,7 +132,9 @@ async function loadModels(p: string) {
       const apiKey = getApiKey(p) ?? "";
       models = await new ExternalLLMModelsAdapter(p as ExternalLLMProvider, apiKey).listModels();
     } else {
-      models = await new LocalLLMModelsAdapter({ provider: p as "ollama" | "lmstudio" }).listModels();
+      models = await new LocalLLMModelsAdapter({
+        provider: p as "ollama" | "lmstudio" | "foundry",
+      }).listModels();
     }
     availableModels.value = models;
     if (models.length > 0) setFieldValue("model", models[0]?.id);
@@ -139,16 +153,19 @@ watch(provider, (newProvider) => {
 onMounted(async () => {
   detecting.value = true;
 
-  const [ollamaModels, lmstudioModels] = await Promise.all([
+  const [ollamaModels, lmstudioModels, foundryModels] = await Promise.all([
     tryListModels("ollama"),
     tryListModels("lmstudio"),
+    tryListModels("foundry"),
   ]);
 
   const ollamaEntry = providers.value.find((p) => p.value === "ollama")!;
   const lmstudioEntry = providers.value.find((p) => p.value === "lmstudio")!;
+  const foundryEntry = providers.value.find((p) => p.value === "foundry")!;
 
   ollamaEntry.enabled = ollamaModels !== null;
   lmstudioEntry.enabled = lmstudioModels !== null;
+  foundryEntry.enabled = foundryModels !== null;
 
   // Enable external providers based on stored API keys
   for (const ext of ["openai", "anthropic", "openrouter"] as const) {
@@ -165,6 +182,10 @@ onMounted(async () => {
     availableModels.value = lmstudioModels;
     if (lmstudioModels.length > 0)
       setFieldValue("model", lmstudioModels[0]?.id);
+  } else if (foundryModels !== null) {
+    setFieldValue("provider", "foundry");
+    availableModels.value = foundryModels;
+    if (foundryModels.length > 0) setFieldValue("model", foundryModels[0]?.id);
   }
 
   detecting.value = false;

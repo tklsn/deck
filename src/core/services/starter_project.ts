@@ -33,7 +33,13 @@ import { GetUSByEpicId } from "../usecases/_Project/GetUSByEpicId";
 import { GetUSById } from "../usecases/_Project/GetUSById";
 import { UpdateProjectById } from "../usecases/_Project/UpdateProjectById";
 
-type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic" | "openrouter";
+type ProviderValue =
+  | "ollama"
+  | "lmstudio"
+  | "foundry"
+  | "openai"
+  | "anthropic"
+  | "openrouter";
 
 export class StarterProjectService {
   private projectRepository: ProjectRepositoryAdapter;
