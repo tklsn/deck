@@ -22,6 +22,7 @@ import {
 } from "../tools/StarterProjectToolDeclarations";
 import { PROMPT_TOOL_DEFINITIONS } from "../adapters/LLMsManagement/LocalSynomiliaToolDefinitions";
 import { CreateStarterProject } from "../usecases/Starter/CreateProject";
+import { DeleteProjectById } from "../usecases/_Project/DeleteProjectById";
 import { HandleEpicsBDDS } from "../usecases/Starter/HandleEpicsBDDS";
 import { HandleEpicsUserStories } from "../usecases/Starter/HandleEpicsUserStories";
 import { HandleStarterProject } from "../usecases/Starter/HandleProject";
@@ -47,6 +48,7 @@ export class StarterProjectService {
   private createProjectUseCase: CreateStarterProject;
   private getProjectByIdUseCase: GetProjectById<StarterProject, StarterProjectStatus>;
   private updateProjectByIdUseCase: UpdateProjectById<StarterProject, StarterProjectStatus>;
+  private deleteProjectByIdUseCase: DeleteProjectById<StarterProject, StarterProjectStatus>;
   private getEpicsByProjectIdUseCase: GetEpicsByProjectId;
   private getProjectEpicByIdUseCase: GetProjectEpicById;
   private getUSByEpicIdUseCase: GetUSByEpicId;
@@ -64,6 +66,7 @@ export class StarterProjectService {
     this.createProjectUseCase = new CreateStarterProject(this.projectRepository);
     this.getProjectByIdUseCase = new GetProjectById(this.projectRepository);
     this.updateProjectByIdUseCase = new UpdateProjectById(this.projectRepository);
+    this.deleteProjectByIdUseCase = new DeleteProjectById(this.projectRepository);
     this.getEpicsByProjectIdUseCase = new GetEpicsByProjectId(this.epicsRepository);
     this.getProjectEpicByIdUseCase = new GetProjectEpicById(this.epicsRepository);
     this.getUSByEpicIdUseCase = new GetUSByEpicId(this.usRepository);
@@ -104,6 +107,10 @@ export class StarterProjectService {
       id,
       payload: { ...current, ...payload },
     });
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await this.deleteProjectByIdUseCase.execute({ id });
   }
 
   // ─── public runner methods (called from Web Worker) ───────────────────────
