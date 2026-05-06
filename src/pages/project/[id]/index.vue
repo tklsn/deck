@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ProviderModelSelect from "@/components/ProviderModelSelect.vue";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -9,26 +10,22 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@iconify/vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ExternalLLMModelsAdapter } from "../../../core/adapters/LLMsManagement/ExternalLLMModelsAdapter";
-import { LocalLLMModelsAdapter } from "../../../core/adapters/LLMsManagement/LocalLLMModelsAdapter";
 import { useLiveQuery } from "../../../core/composables/useLiveQuery";
 import { useProjectExport } from "../../../core/composables/useProjectExport";
+import type { ProviderValue } from "../../../core/composables/useProviderModelSelect";
 import { starterProjectDB } from "../../../core/database/StarterProjectDB";
-import type { LocalLLMModel } from "../../../core/ports/UtilsAndLLMs/LocalLLMModelsPort";
-import type { ExternalLLMProvider } from "../../../core/services/external_llm";
-import { getApiKey } from "../../../core/services/provider_settings";
 import { StarterProjectService } from "../../../core/services/starter_project";
 
 const route = useRoute();
@@ -139,97 +136,15 @@ function isClickable(key: string): boolean {
   return s === "SUCCESS" || s === "DOING";
 }
 
-// ─── Settings panel ────────────────────────────────────────────────────────
-
-type ProviderValue = "ollama" | "lmstudio" | "openai" | "anthropic";
+// ─── Settings modal ────────────────────────────────────────────────────────
 
 const showSettings = ref(false);
 const savingSettings = ref(false);
-
-const providers = ref([
-  { value: "ollama" as ProviderValue, label: "Ollama", enabled: false },
-  { value: "lmstudio" as ProviderValue, label: "LM Studio", enabled: false },
-  { value: "openai" as ProviderValue, label: "OpenAI", enabled: false },
-  { value: "anthropic" as ProviderValue, label: "Anthropic", enabled: false },
-]);
-
-const settingsProvider = ref<ProviderValue>("ollama");
+const settingsProvider = ref<ProviderValue | undefined>();
 const settingsModel = ref<string>("");
-const availableModels = ref<LocalLLMModel[]>([]);
-const loadingModels = ref(false);
-const detectingProviders = ref(false);
 
-async function tryListModels(
-  p: "ollama" | "lmstudio",
-): Promise<LocalLLMModel[] | null> {
-  try {
-    return await new LocalLLMModelsAdapter({ provider: p }).listModels();
-  } catch {
-    return null;
-  }
-}
-
-async function loadModels(p: string) {
-  loadingModels.value = true;
-  availableModels.value = [];
-  settingsModel.value = "";
-  try {
-    let models: LocalLLMModel[];
-    if (p === "openai" || p === "anthropic") {
-      models = await new ExternalLLMModelsAdapter(p as ExternalLLMProvider, getApiKey(p) ?? "").listModels();
-    } else {
-      models = await new LocalLLMModelsAdapter({ provider: p as "ollama" | "lmstudio" }).listModels();
-    }
-    availableModels.value = models;
-    if (models.length > 0 && !settingsModel.value) {
-      settingsModel.value = models[0]!.id;
-    }
-  } catch {
-    availableModels.value = [];
-  } finally {
-    loadingModels.value = false;
-  }
-}
-
-watch(settingsProvider, (newProvider) => {
-  loadModels(newProvider);
-});
-
-async function openSettings() {
+function openSettings() {
   showSettings.value = true;
-  detectingProviders.value = true;
-
-  if (project.value?.provider) {
-    settingsProvider.value = project.value.provider as ProviderValue;
-  }
-  if (project.value?.model) {
-    settingsModel.value = project.value.model;
-  }
-
-  const [ollamaModels, lmstudioModels] = await Promise.all([
-    tryListModels("ollama"),
-    tryListModels("lmstudio"),
-  ]);
-
-  providers.value.find((p) => p.value === "ollama")!.enabled = ollamaModels !== null;
-  providers.value.find((p) => p.value === "lmstudio")!.enabled = lmstudioModels !== null;
-
-  for (const ext of ["openai", "anthropic"] as const) {
-    providers.value.find((p) => p.value === ext)!.enabled = getApiKey(ext) !== null;
-  }
-
-  detectingProviders.value = false;
-
-  const current = settingsProvider.value;
-  if (current === "ollama" && ollamaModels !== null) {
-    availableModels.value = ollamaModels;
-    if (!settingsModel.value && ollamaModels.length > 0) settingsModel.value = ollamaModels[0]!.id;
-  } else if (current === "lmstudio" && lmstudioModels !== null) {
-    availableModels.value = lmstudioModels;
-    if (!settingsModel.value && lmstudioModels.length > 0) settingsModel.value = lmstudioModels[0]!.id;
-  } else {
-    await loadModels(current);
-  }
 }
 
 async function saveSettings() {
@@ -239,6 +154,9 @@ async function saveSettings() {
       provider: settingsProvider.value,
       model: settingsModel.value || undefined,
     });
+    showSettings.value = false;
+  } catch (e) {
+    alert(`Erro ao salvar configurações: ${(e as Error).message}`);
   } finally {
     savingSettings.value = false;
   }
@@ -253,6 +171,8 @@ async function saveAndRetry() {
     });
     service.handleProject(id);
     showSettings.value = false;
+  } catch (e) {
+    alert(`Erro ao salvar e reprocessar: ${(e as Error).message}`);
   } finally {
     savingSettings.value = false;
   }
@@ -267,6 +187,8 @@ async function saveAndReprocessAll() {
     });
     await service.reprocessAll(id);
     showSettings.value = false;
+  } catch (e) {
+    alert(`Erro ao regenerar: ${(e as Error).message}`);
   } finally {
     savingSettings.value = false;
   }
@@ -309,86 +231,32 @@ async function exportProject() {
           variant="outline"
           size="sm"
           class="shrink-0"
-          @click="showSettings ? (showSettings = false) : openSettings()"
+          @click="openSettings"
         >
           <Icon icon="lucide:settings" />
           Configurações
         </Button>
       </div>
 
-      <!-- Settings panel -->
-      <Card v-if="showSettings" class="border-border">
-        <CardHeader class="pb-3">
-          <CardTitle class="text-base">Configurações do Projeto</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-          <p v-if="detectingProviders" class="text-muted-foreground text-sm flex items-center gap-2">
-            <Icon icon="lucide:loader" class="h-4 w-4 animate-spin" />
-            Detectando provedores disponíveis...
-          </p>
-
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="flex flex-col gap-1.5">
-              <label class="text-sm font-medium">Provedor de IA</label>
-              <Select v-model="settingsProvider" :disabled="detectingProviders">
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar provedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="option in providers"
-                    :key="option.value"
-                    :value="option.value"
-                    :disabled="!option.enabled"
-                  >
-                    <span>{{ option.label }}</span>
-                    <span
-                      v-if="!option.enabled"
-                      class="text-muted-foreground ml-1 text-xs"
-                      >indisponível</span
-                    >
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div
-              class="flex flex-col gap-1.5"
-            >
-              <label class="text-sm font-medium">Modelo</label>
-              <Select
-                v-model="settingsModel"
-                :disabled="loadingModels || availableModels.length === 0"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="m in availableModels"
-                    :key="m.id"
-                    :value="m.id"
-                  >
-                    {{ m.name }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p v-if="loadingModels" class="text-muted-foreground text-xs">
-                Carregando modelos...
-              </p>
-              <p
-                v-else-if="availableModels.length === 0"
-                class="text-muted-foreground text-xs"
-              >
-                Nenhum modelo encontrado.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-2 pt-1">
+      <Dialog v-model:open="showSettings">
+        <DialogContent class="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurações do Projeto</DialogTitle>
+            <DialogDescription>
+              Trocar provedor e modelo de IA do projeto.
+            </DialogDescription>
+          </DialogHeader>
+          <ProviderModelSelect
+            v-if="showSettings"
+            v-model:provider="settingsProvider"
+            v-model:model="settingsModel"
+            auto-detect
+            :initial-provider="(project?.provider as ProviderValue | undefined)"
+            :initial-model="project?.model"
+          />
+          <DialogFooter>
             <Button
               variant="outline"
-              size="sm"
               :disabled="savingSettings"
               @click="saveSettings"
             >
@@ -396,7 +264,6 @@ async function exportProject() {
             </Button>
             <Button
               variant="secondary"
-              size="sm"
               :disabled="savingSettings"
               @click="saveAndRetry"
             >
@@ -405,16 +272,15 @@ async function exportProject() {
             </Button>
             <Button
               variant="destructive"
-              size="sm"
               :disabled="savingSettings"
               @click="saveAndReprocessAll"
             >
               <Icon icon="lucide:rotate-ccw" class="h-4 w-4" />
               Regenerar tudo
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Separator />
 
@@ -438,7 +304,7 @@ async function exportProject() {
             <Icon icon="lucide:refresh-cw" class="h-3 w-3" />
             Tentar novamente
           </Button>
-          <Button variant="outline" size="sm" @click="openSettings(); showSettings = true">
+          <Button variant="outline" size="sm" @click="openSettings">
             <Icon icon="lucide:settings" class="h-3 w-3" />
             Trocar provedor
           </Button>
