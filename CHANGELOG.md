@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v1.6.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.5.1...v1.6.0)
+
+### 🚀 Enhancements
+
+- **#7:** Delete project ([f196183](https://github.com/tklsn/deck/commit/f196183))
+- **#3:** Turn project settings panel into Dialog modal ([70ad894](https://github.com/tklsn/deck/commit/70ad894))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.5.1
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.5.0...v1.5.1)
