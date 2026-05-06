@@ -199,6 +199,19 @@ const { exportProject: exportProjectFn } = useProjectExport();
 async function exportProject() {
   if (project.value) await exportProjectFn(project.value);
 }
+
+async function handleDelete() {
+  if (!project.value) return;
+  if (
+    !window.confirm(
+      `Apagar projeto "${project.value.title}"? Essa ação não pode ser desfeita.`,
+    )
+  ) {
+    return;
+  }
+  await service.deleteProject(id);
+  router.push("/");
+}
 </script>
 
 <template>
@@ -227,15 +240,16 @@ async function exportProject() {
           </p>
           <p class="text-muted-foreground mt-1 text-sm">{{ project.prompt }}</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          class="shrink-0"
-          @click="openSettings"
-        >
-          <Icon icon="lucide:settings" />
-          Configurações
-        </Button>
+        <div class="flex shrink-0 gap-2">
+          <Button variant="outline" size="sm" @click="openSettings">
+            <Icon icon="lucide:settings" />
+            Configurações
+          </Button>
+          <Button variant="destructive" size="sm" @click="handleDelete">
+            <Icon icon="lucide:trash-2" />
+            Apagar
+          </Button>
+        </div>
       </div>
 
       <Dialog v-model:open="showSettings">
