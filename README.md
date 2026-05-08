@@ -125,6 +125,10 @@ Epic detail with the **User Stories** tab active. Each story includes a title, d
 
 Same epic detail with the **BDD** tab active. Given/When/Then scenarios are generated for each story, covering both happy paths and failure cases. The example shows scenarios for IoT Bridge integration: successful connection, invalid credentials, and polling with no active devices.
 
+### 12. Video
+
+https://github.com/user-attachments/assets/ff221b8b-78ce-4632-ad83-bd39543690d3
+
 ## Supported AI providers
 
 | Provider   | Models                     |
@@ -182,12 +186,6 @@ Pushing a tag triggers the CI workflow which builds and publishes binaries for a
 - [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn-vue](https://www.shadcn-vue.com/)
 - [Dexie.js](https://dexie.org/) — local IndexedDB storage
 - [electron-updater](https://www.electron.build/auto-update) — auto-updates via GitHub Releases
-
----
-
-## Demo
-
-https://github.com/tklsn/deck/raw/main/docs/video.mp4
 
 ---
 
