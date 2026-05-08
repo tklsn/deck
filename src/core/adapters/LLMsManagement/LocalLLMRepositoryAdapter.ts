@@ -1,11 +1,11 @@
 import OpenAI from "openai";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
+import { isStructuredToolResultAcceptable } from "../../services/artifact_generation";
 import {
   resolveLocalLLMBaseURL,
   type LocalLLMConfig,
   type LocalLLMToolCallStrategy,
 } from "../../services/local_llm";
-import { isStructuredToolResultAcceptable } from "../../services/artifact_generation";
 import type { ChatCompletionMessageParam } from "../../types/completion";
 import type { FunctionDefinition } from "../../types/tool";
 
@@ -89,7 +89,7 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         { model, messages: msgs, temperature: 1 },
         { timeout: LLM_TIMEOUT_MS },
       );
-      const content = response.choices[0].message.content ?? "";
+      const content = response.choices[0]!.message.content ?? "";
       if (content.trim()) return content;
     }
     return "";
@@ -133,18 +133,18 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
       );
 
       const args =
-        completion.choices[0].message.tool_calls?.[0]?.function?.arguments ??
+        completion.choices[0]!.message.tool_calls?.[0]?.function?.arguments ??
         "";
-      if (args.trim() && isStructuredToolResultAcceptable(args, toolDefinition)) {
+      if (
+        args.trim() &&
+        isStructuredToolResultAcceptable(args, toolDefinition)
+      ) {
         return args;
       }
 
-      const text = completion.choices[0].message.content ?? "";
+      const text = completion.choices[0]!.message.content ?? "";
       const match = text.match(/\{[\s\S]*\}/);
-      if (
-        match
-        && isStructuredToolResultAcceptable(match[0], toolDefinition)
-      ) {
+      if (match && isStructuredToolResultAcceptable(match[0], toolDefinition)) {
         return match[0];
       }
     }
@@ -164,7 +164,6 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
           model,
           messages: msgs,
           temperature: 1,
-          // @ts-expect-error — response_format json_schema not yet typed in openai sdk but supported by Ollama/LM Studio
           response_format: {
             type: "json_schema",
             json_schema: {
@@ -177,10 +176,10 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         { timeout: LLM_TIMEOUT_MS },
       );
 
-      const content = completion.choices[0].message.content ?? "";
+      const content = completion.choices[0]!.message.content ?? "";
       if (
-        content.trim()
-        && isStructuredToolResultAcceptable(content, toolDefinition)
+        content.trim() &&
+        isStructuredToolResultAcceptable(content, toolDefinition)
       ) {
         return content;
       }
@@ -196,11 +195,19 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
     const caps = await this.detectModelCapabilities(model);
 
     if (caps.toolCalling) {
-      const viaTools = await this.tryToolCalling(messages, model, toolDefinition);
+      const viaTools = await this.tryToolCalling(
+        messages,
+        model,
+        toolDefinition,
+      );
       if (viaTools.trim()) return viaTools;
     }
     if (caps.structuredOutput) {
-      const viaSchema = await this.tryStructuredOutput(messages, model, toolDefinition);
+      const viaSchema = await this.tryStructuredOutput(
+        messages,
+        model,
+        toolDefinition,
+      );
       if (viaSchema.trim()) return viaSchema;
     }
 
@@ -228,12 +235,9 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         { model, messages: promptedMessages, temperature: 1 },
         { timeout: LLM_TIMEOUT_MS },
       );
-      const text = probe.choices[0].message.content ?? "";
+      const text = probe.choices[0]!.message.content ?? "";
       const match = text.match(/\{[\s\S]*\}/);
-      if (
-        match
-        && isStructuredToolResultAcceptable(match[0], toolDefinition)
-      ) {
+      if (match && isStructuredToolResultAcceptable(match[0], toolDefinition)) {
         return match[0];
       }
     }
@@ -278,7 +282,7 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         { timeout: 30_000 },
       );
       const args =
-        completion.choices[0].message.tool_calls?.[0]?.function?.arguments ??
+        completion.choices[0]!.message.tool_calls?.[0]?.function?.arguments ??
         "";
       JSON.parse(args); // throws if invalid
       return true;
@@ -296,7 +300,6 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         {
           model,
           messages,
-          // @ts-expect-error — response_format json_schema not yet typed in openai sdk but supported by Ollama/LM Studio
           response_format: {
             type: "json_schema",
             json_schema: {
@@ -309,7 +312,7 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         },
         { timeout: 30_000 },
       );
-      const content = completion.choices[0].message.content ?? "";
+      const content = completion.choices[0]!.message.content ?? "";
       const parsed = JSON.parse(content);
       return typeof parsed.value === "number";
     } catch {

@@ -8,7 +8,11 @@ export class EpicsRepositoryAdapter implements EpicsRepositoryPort<
   StarterProjectEpic,
   StarterProjectEpicStatus
 > {
-  constructor(private db = starterProjectDB) {}
+  private db: typeof starterProjectDB;
+
+  constructor() {
+    this.db = starterProjectDB;
+  }
 
   async save(epic: StarterProjectEpic): Promise<StarterProjectEpic> {
     const { id: _, userStories: __, epicStatus: ___, ...rest } = epic;
@@ -118,13 +122,13 @@ export class EpicsRepositoryAdapter implements EpicsRepositoryPort<
   ): Promise<StarterProjectEpicStatus> {
     epic.epicStatus[keyOnEpic] = status;
 
-    return await this.__updateStatus(epic.epicStatus, keyOnEpic, status);
+    return await this.__updateStatus(epic.epicStatus!, keyOnEpic, status);
   }
 
   async getStatus(id: string): Promise<StarterProjectEpicStatus> {
-    return await this.db.starterProjectEpicStatuses
+    return (await this.db.starterProjectEpicStatuses
       .where("epicId")
       .equals(id)
-      .first();
+      .first()) as StarterProjectEpicStatus;
   }
 }
