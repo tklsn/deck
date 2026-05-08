@@ -16,19 +16,19 @@ You describe an idea. D.E.C.K. uses AI to generate:
 
 ## Supported AI providers
 
-| Provider  | Models                          |
-| --------- | ------------------------------- |
-| OpenAI    | GPT-4o, o1, o3-mini             |
-| Anthropic | Claude Opus, Sonnet, Haiku      |
-| Google    | Gemini 2.0 Flash, 1.5 Pro/Flash |
-| Ollama    | Any local model                 |
-| LM Studio | Any local model                 |
+| Provider   | Models                     |
+| ---------- | -------------------------- |
+| OpenAI     | GPT-4o, o1, o3-mini        |
+| Anthropic  | Claude Opus, Sonnet, Haiku |
+| OpenRouter | Any model                  |
+| Ollama     | Any local model            |
+| LM Studio  | Any local model            |
 
 Bring your own API key. Keys are encrypted with the OS keychain via Electron's `safeStorage`.
 
 ## Download
 
-Pre-built binaries are available on the [Releases](https://github.com/silvercent011/sofia-desktop/releases) page.
+Pre-built binaries are available on the [Releases](https://github.com/tklsn/deck/releases) page.
 
 | Platform      | File               |
 | ------------- | ------------------ |

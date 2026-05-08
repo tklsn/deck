@@ -5,10 +5,12 @@ import type { FunctionDefinition } from "../../types/tool";
 
 export const LLM_TIMEOUT_MS = 5 * 60 * 1000;
 
-export abstract class BaseOpenAICompatibleAdapter
-  implements LLMSEngineRepositoryPort
-{
-  constructor(protected readonly client: OpenAI) {}
+export abstract class BaseOpenAICompatibleAdapter implements LLMSEngineRepositoryPort {
+  protected readonly client: OpenAI;
+
+  constructor(client: OpenAI) {
+    this.client = client;
+  }
 
   protected normalizeModel(model: string): string {
     return model;

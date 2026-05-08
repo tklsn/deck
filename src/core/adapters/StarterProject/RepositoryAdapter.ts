@@ -8,7 +8,11 @@ export class ProjectRepositoryAdapter implements ProjectRepositoryPort<
   StarterProject,
   StarterProjectStatus
 > {
-  constructor(private db = starterProjectDB) {}
+  private db: typeof starterProjectDB;
+
+  constructor() {
+    this.db = starterProjectDB;
+  }
 
   async save(project: StarterProject): Promise<StarterProject> {
     const { id: _, projectStatus: __, epics: ___, ...rest } = project;
@@ -22,12 +26,12 @@ export class ProjectRepositoryAdapter implements ProjectRepositoryPort<
     const projectStatus: StarterProjectStatus = {
       id: statusId,
       projectId: id,
-      expandedPrompt: 'PENDING',
-      requirementDocument: 'PENDING',
-      projectPlan: 'PENDING',
-      projectScope: 'PENDING',
-      projectArchitecture: 'PENDING',
-      epics: 'PENDING',
+      expandedPrompt: "PENDING",
+      requirementDocument: "PENDING",
+      projectPlan: "PENDING",
+      projectScope: "PENDING",
+      projectArchitecture: "PENDING",
+      epics: "PENDING",
       createdAt: now,
       updatedAt: now,
     };
@@ -125,17 +129,16 @@ export class ProjectRepositoryAdapter implements ProjectRepositoryPort<
     project.projectStatus[keyOnProject] = status;
 
     return await this.__updateStatus(
-      project.projectStatus,
+      project.projectStatus!,
       keyOnProject,
       status,
     );
   }
 
   async getStatus(id: string): Promise<StarterProjectStatus> {
-    return await this.db.starterProjectStatuses
+    return (await this.db.starterProjectStatuses
       .where("projectId")
       .equals(id)
-      .first();
+      .first()) as StarterProjectStatus;
   }
-
 }
