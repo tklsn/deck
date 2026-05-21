@@ -7,7 +7,7 @@ import {
   Layers,
   Rocket,
   Zap,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { ref } from "vue";
 import { Badge } from "./ui/badge";
 
