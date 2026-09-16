@@ -10,13 +10,41 @@ import type { ChatCompletionMessageParam } from "../../types/completion";
 import type { FunctionDefinition } from "../../types/tool";
 
 const LLM_TIMEOUT_MS = 5 * 60 * 1000;
+const PROBE_MAX_TOKENS = 1024;
 
 interface ModelCapabilities {
   toolCalling: boolean;
   structuredOutput: boolean;
 }
 
+type ProbeResult = boolean | null;
+
 const capabilitiesCache = new Map<string, ModelCapabilities>();
+
+interface MessageWithReasoning {
+  content?: string | null;
+  reasoning_content?: string | null;
+}
+
+function extractMessageText(message: MessageWithReasoning): string {
+  if (message.content && message.content.trim()) return message.content;
+  if (message.reasoning_content && message.reasoning_content.trim()) {
+    return message.reasoning_content;
+  }
+  return "";
+}
+
+function extractJsonBlock(text: string): string | null {
+  const match = text.match(/\{[\s\S]*\}/);
+  return match ? match[0] : null;
+}
+
+function isTransportError(error: unknown): boolean {
+  return (
+    error instanceof OpenAI.APIConnectionError ||
+    error instanceof OpenAI.APIConnectionTimeoutError
+  );
+}
 
 function truncateMessages(
   messages: ChatCompletionMessageParam[],
@@ -119,18 +147,28 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
     toolDefinition: FunctionDefinition,
   ): Promise<string> {
     const msgs = this.limitContext(messages);
+    let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
-      const completion = await this.client.chat.completions.create(
-        {
-          model,
-          messages: msgs,
-          temperature: 1,
-          tools: [{ type: "function", function: toolDefinition }],
-          tool_choice: "required",
-        },
-        { timeout: LLM_TIMEOUT_MS },
-      );
+
+      let completion;
+      try {
+        completion = await this.client.chat.completions.create(
+          {
+            model,
+            messages: msgs,
+            temperature: 1,
+            tools: [{ type: "function", function: toolDefinition }],
+            tool_choice: "required",
+          },
+          { timeout: LLM_TIMEOUT_MS },
+        );
+      } catch (err) {
+        console.error(`[LocalLLM:tryToolCalling] tentativa ${attempt + 1} falhou:`, err);
+        lastError = err;
+        continue;
+      }
+      lastError = undefined;
 
       const args =
         completion.choices[0]!.message.tool_calls?.[0]?.function?.arguments ??
@@ -142,12 +180,13 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         return args;
       }
 
-      const text = completion.choices[0]!.message.content ?? "";
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match && isStructuredToolResultAcceptable(match[0], toolDefinition)) {
-        return match[0];
+      const text = extractMessageText(completion.choices[0]!.message);
+      const match = extractJsonBlock(text);
+      if (match && isStructuredToolResultAcceptable(match, toolDefinition)) {
+        return match;
       }
     }
+    if (lastError) throw lastError;
     return "";
   }
 
@@ -157,26 +196,36 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
     toolDefinition: FunctionDefinition,
   ): Promise<string> {
     const msgs = this.limitContext(messages);
+    let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
-      const completion = await this.client.chat.completions.create(
-        {
-          model,
-          messages: msgs,
-          temperature: 1,
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: toolDefinition.name,
-              schema: toolDefinition.parameters,
-              strict: true,
+
+      let completion;
+      try {
+        completion = await this.client.chat.completions.create(
+          {
+            model,
+            messages: msgs,
+            temperature: 1,
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: toolDefinition.name,
+                schema: toolDefinition.parameters,
+                strict: true,
+              },
             },
           },
-        },
-        { timeout: LLM_TIMEOUT_MS },
-      );
+          { timeout: LLM_TIMEOUT_MS },
+        );
+      } catch (err) {
+        console.error(`[LocalLLM:tryStructuredOutput] tentativa ${attempt + 1} falhou:`, err);
+        lastError = err;
+        continue;
+      }
+      lastError = undefined;
 
-      const content = completion.choices[0]!.message.content ?? "";
+      const content = extractMessageText(completion.choices[0]!.message);
       if (
         content.trim() &&
         isStructuredToolResultAcceptable(content, toolDefinition)
@@ -184,6 +233,7 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
         return content;
       }
     }
+    if (lastError) throw lastError;
     return "";
   }
 
@@ -229,19 +279,31 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
       },
     ]);
 
+    let lastError: unknown;
     for (let attempt = 0; attempt < 2; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * attempt));
-      const probe = await this.client.chat.completions.create(
-        { model, messages: promptedMessages, temperature: 1 },
-        { timeout: LLM_TIMEOUT_MS },
-      );
-      const text = probe.choices[0]!.message.content ?? "";
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match && isStructuredToolResultAcceptable(match[0], toolDefinition)) {
-        return match[0];
+
+      let probe;
+      try {
+        probe = await this.client.chat.completions.create(
+          { model, messages: promptedMessages, temperature: 1 },
+          { timeout: LLM_TIMEOUT_MS },
+        );
+      } catch (err) {
+        console.error(`[LocalLLM:tryPromptedJson] tentativa ${attempt + 1} falhou:`, err);
+        lastError = err;
+        continue;
+      }
+      lastError = undefined;
+
+      const text = extractMessageText(probe.choices[0]!.message);
+      const match = extractJsonBlock(text);
+      if (match && isStructuredToolResultAcceptable(match, toolDefinition)) {
+        return match;
       }
     }
 
+    if (lastError) throw lastError;
     return "";
   }
 
@@ -261,15 +323,20 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
       this.probeStructuredOutput(probeMessages, model),
     ]);
 
-    const caps: ModelCapabilities = { toolCalling, structuredOutput };
-    capabilitiesCache.set(key, caps);
+    const caps: ModelCapabilities = {
+      toolCalling: toolCalling ?? false,
+      structuredOutput: structuredOutput ?? false,
+    };
+    if (toolCalling !== null && structuredOutput !== null) {
+      capabilitiesCache.set(key, caps);
+    }
     return caps;
   }
 
   private async probeToolCalling(
     messages: ChatCompletionMessageParam[],
     model: string,
-  ): Promise<boolean> {
+  ): Promise<ProbeResult> {
     try {
       const completion = await this.client.chat.completions.create(
         {
@@ -277,24 +344,23 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
           messages,
           tools: [{ type: "function", function: ECHO_TOOL }],
           tool_choice: "required",
-          max_tokens: 64,
+          max_tokens: PROBE_MAX_TOKENS,
         },
         { timeout: 30_000 },
       );
       const args =
-        completion.choices[0]!.message.tool_calls?.[0]?.function?.arguments ??
-        "";
+        completion.choices[0]!.message.tool_calls?.[0]?.type === "function" ? completion.choices[0]!.message.tool_calls?.[0]?.function?.arguments : "";
       JSON.parse(args); // throws if invalid
       return true;
-    } catch {
-      return false;
+    } catch (err) {
+      return isTransportError(err) ? null : false;
     }
   }
 
   private async probeStructuredOutput(
     messages: ChatCompletionMessageParam[],
     model: string,
-  ): Promise<boolean> {
+  ): Promise<ProbeResult> {
     try {
       const completion = await this.client.chat.completions.create(
         {
@@ -308,15 +374,16 @@ export class LocalLLMRepositoryAdapter implements LLMSEngineRepositoryPort {
               strict: true,
             },
           },
-          max_tokens: 64,
+          max_tokens: PROBE_MAX_TOKENS,
         },
         { timeout: 30_000 },
       );
-      const content = completion.choices[0]!.message.content ?? "";
-      const parsed = JSON.parse(content);
+      const text = extractMessageText(completion.choices[0]!.message);
+      const jsonText = extractJsonBlock(text) ?? text;
+      const parsed = JSON.parse(jsonText);
       return typeof parsed.value === "number";
-    } catch {
-      return false;
+    } catch (err) {
+      return isTransportError(err) ? null : false;
     }
   }
 }

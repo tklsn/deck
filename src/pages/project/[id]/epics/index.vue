@@ -19,6 +19,7 @@ import {
 import { Icon } from "@iconify/vue";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import { useLiveQuery } from "../../../../core/composables/useLiveQuery";
 import type {
   StarterProjectEpicRecord,
@@ -177,9 +178,9 @@ const anyEpicFailure = computed(() => epics.value.some(hasEpicFailure));
               >Épico</Badge
             >
           </div>
-          <CardDescription class="line-clamp-2">{{
-            epic.description
-          }}</CardDescription>
+          <CardDescription class="line-clamp-2">
+            <MarkdownRenderer inline :content="epic.description" />
+          </CardDescription>
         </CardHeader>
         <CardContent v-if="epic.epicStatus">
           <div class="flex flex-wrap gap-2">

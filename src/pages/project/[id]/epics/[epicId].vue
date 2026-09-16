@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Icon } from "@iconify/vue";
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import { useLiveQuery } from "../../../../core/composables/useLiveQuery";
 import { starterProjectDB } from "../../../../core/database/StarterProjectDB";
 import { StarterProjectService } from "../../../../core/services/starter_project";
@@ -159,7 +160,9 @@ function reprocessAll() {
             <Badge class="text-xs uppercase">Épico</Badge>
           </div>
           <h1 class="text-2xl font-bold">{{ epic.name }}</h1>
-          <p class="text-muted-foreground text-sm">{{ epic.description }}</p>
+          <p class="text-muted-foreground text-sm">
+            <MarkdownRenderer inline :content="epic.description" />
+          </p>
         </div>
         <div class="flex gap-2">
           <Button
@@ -210,7 +213,7 @@ function reprocessAll() {
             >
               <Card v-for="(feature, i) in epic.features" :key="i">
                 <CardContent class="pt-4">
-                  <p class="text-sm">{{ feature }}</p>
+                  <p class="text-sm"><MarkdownRenderer inline :content="feature" /></p>
                 </CardContent>
               </Card>
             </div>
@@ -256,7 +259,7 @@ function reprocessAll() {
                 </CardHeader>
                 <CardContent class="flex flex-col gap-3">
                   <p class="text-muted-foreground text-sm">
-                    {{ us.description }}
+                    <MarkdownRenderer inline :content="us.description" />
                   </p>
 
                   <template v-if="us.acceptanceCriteria">
@@ -266,11 +269,10 @@ function reprocessAll() {
                       >
                         Critérios de Aceitação
                       </p>
-                      <p
-                        class="text-muted-foreground whitespace-pre-wrap text-sm"
-                      >
-                        {{ us.acceptanceCriteria }}
-                      </p>
+                      <MarkdownRenderer
+                        :content="us.acceptanceCriteria"
+                        class="text-sm text-muted-foreground"
+                      />
                     </div>
                   </template>
 
@@ -291,7 +293,7 @@ function reprocessAll() {
                             icon="lucide:circle-dot"
                             class="text-muted-foreground mt-0.5 h-3 w-3 shrink-0"
                           />
-                          {{ subtask }}
+                          <MarkdownRenderer inline :content="subtask" />
                         </li>
                       </ul>
                     </div>
@@ -359,7 +361,7 @@ function reprocessAll() {
                         class="text-muted-foreground"
                       >
                         <span class="font-semibold text-foreground">Dado </span
-                        >{{ g }}
+                        ><MarkdownRenderer inline :content="g" />
                       </p>
                       <p
                         v-for="w in scenario.when"
@@ -368,7 +370,7 @@ function reprocessAll() {
                       >
                         <span class="font-semibold text-foreground"
                           >Quando </span
-                        >{{ w }}
+                        ><MarkdownRenderer inline :content="w" />
                       </p>
                       <p
                         v-for="t in scenario.then"
@@ -376,7 +378,7 @@ function reprocessAll() {
                         class="text-muted-foreground"
                       >
                         <span class="font-semibold text-foreground">Então </span
-                        >{{ t }}
+                        ><MarkdownRenderer inline :content="t" />
                       </p>
                     </div>
                   </CardContent>

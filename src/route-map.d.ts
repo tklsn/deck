@@ -20,9 +20,9 @@ import type {
 
 declare module 'vue-router' {
   interface TypesConfig {
-    ParamParsers:
-      | never
+    _ParamParsers: {}
     RouteNamedMap: import('vue-router/auto-routes').RouteNamedMap
+    _RouteFileInfoMap: import('vue-router/auto-routes')._RouteFileInfoMap
   }
 }
 
@@ -48,8 +48,8 @@ declare module 'vue-router/auto-routes' {
     '/project/[id]/[artifact]': RouteRecordInfo<
       '/project/[id]/[artifact]',
       '/project/:id/:artifact',
-      { id: ParamValue<true>, artifact: ParamValue<true> },
-      { id: ParamValue<false>, artifact: ParamValue<false> },
+      { artifact: ParamValue<true>, id: ParamValue<true> },
+      { artifact: ParamValue<false>, id: ParamValue<false> },
       | never
     >,
     '/project/[id]/epics/': RouteRecordInfo<
@@ -62,8 +62,8 @@ declare module 'vue-router/auto-routes' {
     '/project/[id]/epics/[epicId]': RouteRecordInfo<
       '/project/[id]/epics/[epicId]',
       '/project/:id/epics/:epicId',
-      { id: ParamValue<true>, epicId: ParamValue<true> },
-      { id: ParamValue<false>, epicId: ParamValue<false> },
+      { epicId: ParamValue<true>, id: ParamValue<true> },
+      { epicId: ParamValue<false>, id: ParamValue<false> },
       | never
     >,
     '/project/create': RouteRecordInfo<
@@ -105,11 +105,15 @@ declare module 'vue-router/auto-routes' {
         | '/'
       views:
         | never
+      pathParamNames:
+        | never
     }
     'src/pages/project/[id]/index.vue': {
       routes:
         | '/project/[id]/'
       views:
+        | never
+      pathParamNames:
         | never
     }
     'src/pages/project/[id]/[artifact].vue': {
@@ -117,11 +121,15 @@ declare module 'vue-router/auto-routes' {
         | '/project/[id]/[artifact]'
       views:
         | never
+      pathParamNames:
+        | 'artifact'
     }
     'src/pages/project/[id]/epics/index.vue': {
       routes:
         | '/project/[id]/epics/'
       views:
+        | never
+      pathParamNames:
         | never
     }
     'src/pages/project/[id]/epics/[epicId].vue': {
@@ -129,11 +137,15 @@ declare module 'vue-router/auto-routes' {
         | '/project/[id]/epics/[epicId]'
       views:
         | never
+      pathParamNames:
+        | 'epicId'
     }
     'src/pages/project/create.vue': {
       routes:
         | '/project/create'
       views:
+        | never
+      pathParamNames:
         | never
     }
     'src/pages/roadmap.vue': {
@@ -141,11 +153,15 @@ declare module 'vue-router/auto-routes' {
         | '/roadmap'
       views:
         | never
+      pathParamNames:
+        | never
     }
     'src/pages/settings.vue': {
       routes:
         | '/settings'
       views:
+        | never
+      pathParamNames:
         | never
     }
   }
