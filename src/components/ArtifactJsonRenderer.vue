@@ -73,6 +73,11 @@ function isObjectArray(val: JsonValue): val is JsonObject[] {
 function label(key: string): string {
   return FIELD_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+function itemText(item: JsonObject): string {
+  const val = item["description"] ?? item["explanation"] ?? item["body"];
+  return typeof val === "string" ? val : "";
+}
 </script>
 
 <template>
@@ -97,7 +102,7 @@ function label(key: string): string {
           <ul v-else-if="isStringArray(value)" class="space-y-2 pl-1">
             <li v-for="(item, i) in value" :key="i" class="flex gap-3">
               <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40 mt-[9px]" />
-              <span>{{ item }}</span>
+              <MarkdownRenderer inline :content="item" />
             </li>
           </ul>
 
@@ -132,9 +137,11 @@ function label(key: string): string {
               </p>
 
               <!-- description / explanation / body -->
-              <p v-if="item['description'] ?? item['explanation'] ?? item['body']" class="text-muted-foreground leading-relaxed">
-                {{ item["description"] ?? item["explanation"] ?? item["body"] }}
-              </p>
+              <MarkdownRenderer
+                v-if="itemText(item)"
+                :content="itemText(item)"
+                class="text-muted-foreground leading-relaxed"
+              />
 
               <!-- nested string arrays (acceptance_criteria, given, when, then…) -->
               <template v-for="[subKey, subVal] in Object.entries(item)" :key="subKey">
@@ -145,7 +152,7 @@ function label(key: string): string {
                   <ul class="space-y-1.5 pl-1">
                     <li v-for="(s, j) in subVal" :key="j" class="flex gap-3">
                       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40 mt-[9px]" />
-                      <span>{{ s }}</span>
+                      <MarkdownRenderer inline :content="s" />
                     </li>
                   </ul>
                 </template>
