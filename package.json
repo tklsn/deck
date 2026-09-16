@@ -62,6 +62,7 @@
     ]
   },
   "build": {
+    "executableName": "deck",
     "productName": "deck",
     "appId": "br.com.tksn.deck",
     "icon": "build/icon.png",
