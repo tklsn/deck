@@ -1,6 +1,31 @@
 # Changelog
 
 
+## v1.7.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.6.0...v1.7.0)
+
+### 🚀 Enhancements
+
+- **1.6.1:** Enhance Markdown rendering in various components ([f09f716](https://github.com/tklsn/deck/commit/f09f716))
+
+### 🩹 Fixes
+
+- **dead-code:** Remove unused code ([3d01fe4](https://github.com/tklsn/deck/commit/3d01fe4))
+- **types:** Update vue-router types for better compatibility ([9353bce](https://github.com/tklsn/deck/commit/9353bce))
+
+### 📖 Documentation
+
+- Add video and screenshots ([c1708df](https://github.com/tklsn/deck/commit/c1708df))
+
+### 🏡 Chore
+
+- **version:** Update version to 1.6.1 ([60ca0d9](https://github.com/tklsn/deck/commit/60ca0d9))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.6.0
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.5.1...v1.6.0)
