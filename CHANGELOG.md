@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.8.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.7.0...v1.8.0)
+
+### 🚀 Enhancements
+
+- **build:** Add executableName to package.json ([478579e](https://github.com/tklsn/deck/commit/478579e))
+
+### 🩹 Fixes
+
+- **deps:** Downgrade typescript to version 6.0.3 for compatibility ([3854031](https://github.com/tklsn/deck/commit/3854031))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.7.0
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.6.0...v1.7.0)
