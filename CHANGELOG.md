@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v1.10.0
+
+[compare changes](https://github.com/tklsn/deck/compare/v1.8.0...v1.10.0)
+
+### 🚀 Enhancements
+
+- **llms:** Simplify llms handling ([2caa930](https://github.com/tklsn/deck/commit/2caa930))
+- **chat:** Add onProgress callback for streaming updates and improve JSON parsing ([775c795](https://github.com/tklsn/deck/commit/775c795))
+
+### 🏡 Chore
+
+- Update version to 1.9.0 in package.json ([5a8b8f3](https://github.com/tklsn/deck/commit/5a8b8f3))
+
+### ❤️ Contributors
+
+- Sidney Alex <silvercenturion2@gmail.com>
+
 ## v1.8.0
 
 [compare changes](https://github.com/tklsn/deck/compare/v1.7.0...v1.8.0)
