@@ -26,6 +26,7 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
     promptRef,
     model,
     lang,
+    onProgress,
   }: ArtifactInput): Promise<string> {
     const toolDefinition = this.promptEngineRepository.getToolDefinition(promptRef);
 
@@ -37,6 +38,7 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
           promptRef,
           model,
           lang,
+          onProgress,
           toolDefinition,
         })
       ).filter(Boolean);
@@ -53,7 +55,7 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
       { context, general_instructions, lang },
       promptRef,
     );
-    const chatRoll = await this.handleChat.execute({ prompts, model });
+    const chatRoll = await this.handleChat.execute({ prompts, model, onProgress });
 
     const result = chatRoll
       .filter((m) => m.role === "assistant")

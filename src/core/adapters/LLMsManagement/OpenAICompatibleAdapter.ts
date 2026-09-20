@@ -1,4 +1,9 @@
 import OpenAI from "openai";
+import type {
+  ChatCompletionChunk,
+  ChatCompletionCreateParamsNonStreaming,
+  ChatCompletionMessage,
+} from "openai/resources/chat/completions";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import type { ChatMessage } from "../../domain/ChatMessage";
 import type { FunctionDefinition } from "../../types/tool";
@@ -24,6 +29,16 @@ export interface OpenAICompatibleOptions {
 function stripThinking(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
+
+// Durante o stream, esconde tambem um <think> ainda aberto.
+function visibleText(text: string): string {
+  const stripped = stripThinking(text);
+  const open = stripped.indexOf("<think>");
+  return (open >= 0 ? stripped.slice(0, open) : stripped).trim();
+}
+
+type Params = Omit<ChatCompletionCreateParamsNonStreaming, "stream">;
+type Delta = ChatCompletionChunk.Choice.Delta;
 
 // Templates de chat (ex.: Qwen) exigem ao menos uma mensagem `user`.
 function ensureUserTurn(
@@ -63,32 +78,72 @@ export class OpenAICompatibleAdapter implements LLMSEngineRepositoryPort {
     return this.options.normalizeModel?.(model) ?? model;
   }
 
-  private async request<T>(call: () => Promise<T>): Promise<T> {
+  private async request<T>(
+    call: () => Promise<T>,
+    canRetry: () => boolean = () => true,
+  ): Promise<T> {
     try {
       return await call();
     } catch (error) {
-      if (!isTransient(error)) throw error;
+      if (!isTransient(error) || !canRetry()) throw error;
       console.warn("[LLM] falha transitória, tentando novamente:", error);
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       return call();
     }
   }
 
+  // Sem onChunk: chamada unica. Com onChunk: stream; o timeout do SDK cobre
+  // so ate os headers (load JIT + prompt), depois o stream corre livre.
+  private async complete(
+    params: Params,
+    fromMessage: (message: ChatCompletionMessage | undefined) => string,
+    fromDelta: (delta: Delta) => string,
+    onChunk?: (accumulated: string) => void,
+  ): Promise<string> {
+    if (!onChunk) {
+      const response = await this.request(() =>
+        this.client.chat.completions.create(params, { timeout: LLM_TIMEOUT_MS }),
+      );
+      return fromMessage(response.choices[0]?.message);
+    }
+
+    let started = false;
+    return this.request(
+      async () => {
+        const stream = await this.client.chat.completions.create(
+          { ...params, stream: true },
+          { timeout: LLM_TIMEOUT_MS },
+        );
+        let accumulated = "";
+        for await (const chunk of stream) {
+          const piece = fromDelta(chunk.choices[0]?.delta ?? {});
+          if (!piece) continue;
+          started = true;
+          accumulated += piece;
+          onChunk(visibleText(accumulated));
+        }
+        return accumulated;
+      },
+      () => !started,
+    );
+  }
+
   async handleChat(
     messages: ChatMessage[],
     model: string,
+    onChunk?: (accumulated: string) => void,
   ): Promise<string> {
-    const response = await this.request(() =>
-      this.client.chat.completions.create(
-        {
-          model: this.model(model),
-          messages: ensureUserTurn(messages),
-          temperature: 1,
-        },
-        { timeout: LLM_TIMEOUT_MS },
-      ),
+    const raw = await this.complete(
+      {
+        model: this.model(model),
+        messages: ensureUserTurn(messages),
+        temperature: 1,
+      },
+      (m) => m?.content ?? "",
+      (d) => d.content ?? "",
+      onChunk,
     );
-    return stripThinking(response.choices[0]?.message.content ?? "");
+    return stripThinking(raw);
   }
 
   async handleChatWithTools(
@@ -96,6 +151,7 @@ export class OpenAICompatibleAdapter implements LLMSEngineRepositoryPort {
     model: string,
     toolDefinition: FunctionDefinition,
     _toolName: string,
+    onChunk?: (accumulated: string) => void,
   ): Promise<string> {
     const base = {
       model: this.model(model),
@@ -104,36 +160,37 @@ export class OpenAICompatibleAdapter implements LLMSEngineRepositoryPort {
     };
 
     if (this.options.structuredMode === "json_schema") {
-      const response = await this.request(() =>
-        this.client.chat.completions.create(
-          {
-            ...base,
-            response_format: {
-              type: "json_schema",
-              json_schema: {
-                name: toolDefinition.name,
-                schema: toolDefinition.parameters,
-                strict: true,
-              },
-            },
-          },
-          { timeout: LLM_TIMEOUT_MS },
-        ),
-      );
-      return stripThinking(response.choices[0]?.message.content ?? "");
-    }
-
-    const response = await this.request(() =>
-      this.client.chat.completions.create(
+      const raw = await this.complete(
         {
           ...base,
-          tools: [{ type: "function", function: toolDefinition }],
-          tool_choice: "required",
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: toolDefinition.name,
+              schema: toolDefinition.parameters,
+              strict: true,
+            },
+          },
         },
-        { timeout: LLM_TIMEOUT_MS },
-      ),
+        (m) => m?.content ?? "",
+        (d) => d.content ?? "",
+        onChunk,
+      );
+      return stripThinking(raw);
+    }
+
+    return this.complete(
+      {
+        ...base,
+        tools: [{ type: "function", function: toolDefinition }],
+        tool_choice: "required",
+      },
+      (m) => {
+        const call = m?.tool_calls?.[0];
+        return call?.type === "function" ? call.function.arguments : "";
+      },
+      (d) => d.tool_calls?.[0]?.function?.arguments ?? "",
+      onChunk,
     );
-    const toolCall = response.choices[0]?.message.tool_calls?.[0];
-    return toolCall?.type === "function" ? toolCall.function.arguments : "";
   }
 }

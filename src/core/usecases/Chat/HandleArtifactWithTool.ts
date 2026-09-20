@@ -25,6 +25,7 @@ export class HandleArtifactWithTool implements UseCase<
     model,
     toolDefinition,
     lang,
+    onProgress,
     ...fromT
   }: T & ArtifactInput & { toolDefinition: FunctionDefinition }): Promise<
     any[]
@@ -33,7 +34,7 @@ export class HandleArtifactWithTool implements UseCase<
       { lang, ...fromT },
       promptRef,
     );
-    const chatRoll = await this.handleChat.execute({ prompts, model, toolDefinition });
+    const chatRoll = await this.handleChat.execute({ prompts, model, toolDefinition, onProgress });
 
     const result = chatRoll
       .filter((m) => m.role === "assistant")

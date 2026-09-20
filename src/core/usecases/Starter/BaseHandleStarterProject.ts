@@ -9,6 +9,38 @@ import { GetProjectById } from "../_Project/GetProjectById";
 import { UpdateProjectStatus } from "../_Project/UpdateProjectStatus";
 import { langInstruction } from "../_shared/Common";
 
+const PROGRESS_FLUSH_MS = 300;
+
+// Grava o texto parcial (throttled). close() descarta o pendente e espera a escrita em voo,
+// para nunca sobrescrever o resultado final.
+function createProgressWriter(write: (text: string) => Promise<void>) {
+  let latest: string | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let chain: Promise<void> = Promise.resolve();
+  let closed = false;
+
+  const flush = () => {
+    timer = undefined;
+    if (closed || latest === null) return;
+    const text = latest;
+    latest = null;
+    chain = chain.then(() => write(text)).catch(console.error);
+  };
+
+  return {
+    push(text: string) {
+      if (closed) return;
+      latest = text;
+      timer ??= setTimeout(flush, PROGRESS_FLUSH_MS);
+    },
+    async close() {
+      closed = true;
+      clearTimeout(timer);
+      await chain;
+    },
+  };
+}
+
 export type ArtifactStepParams = ArtifactInput & { keyOnProject: string };
 
 export abstract class BaseHandleStarterProject {
@@ -83,14 +115,30 @@ export abstract class BaseHandleStarterProject {
                 .join("\n\n")
             : (current[keyOfInput as keyof StarterProject] as string);
 
-          const result = await processStep({
-            context,
-            general_instructions: langInstruction(current.lang),
-            model: customModel ?? model,
-            promptRef,
-            lang: current.lang,
-            keyOnProject,
+          const progress = createProgressWriter(async (text) => {
+            current[keyOnProject as keyof StarterProject] = text as never;
+            await this.projectRepository.update(current);
           });
+
+          let result: string;
+          try {
+            result = await processStep({
+              context,
+              general_instructions: langInstruction(current.lang),
+              model: customModel ?? model,
+              promptRef,
+              lang: current.lang,
+              keyOnProject,
+              onProgress: progress.push,
+            });
+          } catch (error) {
+            await progress.close();
+            // Nao deixa JSON truncado no lugar do artefato.
+            current[keyOnProject as keyof StarterProject] = "" as never;
+            await this.projectRepository.update(current);
+            throw error;
+          }
+          await progress.close();
 
           current[keyOnProject as keyof StarterProject] = result as never;
           await this.projectRepository.update(current);

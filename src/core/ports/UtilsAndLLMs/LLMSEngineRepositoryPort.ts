@@ -5,6 +5,7 @@ export interface LLMSEngineRepositoryPort {
   handleChat: (
     messages: ChatMessage[],
     model: string,
+    onChunk?: (accumulated: string) => void,
   ) => Promise<string>;
 
   handleChatWithTools: (
@@ -12,6 +13,6 @@ export interface LLMSEngineRepositoryPort {
     model: string,
     toolDefinition: FunctionDefinition,
     toolName: string,
+    onChunk?: (accumulated: string) => void,
   ) => Promise<string>;
-
 }

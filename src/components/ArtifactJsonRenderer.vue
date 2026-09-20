@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import MarkdownRenderer from "./MarkdownRenderer.vue";
+import { parsePartialJson } from "@/core/services/partial_json";
 import { Badge } from "@/components/ui/badge";
 
 const props = defineProps<{ content: string }>();
@@ -47,7 +48,8 @@ const parsed = computed<JsonObject | null>(() => {
     const obj = JSON.parse(props.content);
     return typeof obj === "object" && obj !== null && !Array.isArray(obj) ? obj : null;
   } catch {
-    return null;
+    // JSON ainda incompleto (streaming): tenta fechar o que estiver aberto.
+    return parsePartialJson(props.content) as JsonObject | null;
   }
 });
 

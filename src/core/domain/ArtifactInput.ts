@@ -4,4 +4,5 @@ export interface ArtifactInput {
   model: string
   promptRef: string
   lang: string
+  onProgress?: (partial: string) => void
 }
