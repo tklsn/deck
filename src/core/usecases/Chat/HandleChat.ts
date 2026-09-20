@@ -1,6 +1,6 @@
 import type { Prompts } from "../../domain/Prompt";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
-import type { ChatCompletionMessageParam } from "../../types/completion";
+import type { ChatMessage } from "../../domain/ChatMessage";
 import type { UseCase } from "../_shared/Common";
 
 interface HandleChatInput {
@@ -10,7 +10,7 @@ interface HandleChatInput {
 
 export class HandleChat implements UseCase<
   HandleChatInput,
-  ChatCompletionMessageParam[]
+  ChatMessage[]
 > {
   private llmsEngineRepository: LLMSEngineRepositoryPort;
 
@@ -21,20 +21,21 @@ export class HandleChat implements UseCase<
   async execute({
     prompts,
     model,
-  }: HandleChatInput): Promise<ChatCompletionMessageParam[]> {
-    const chatRoll: ChatCompletionMessageParam[] = [
+  }: HandleChatInput): Promise<ChatMessage[]> {
+    const chatRoll: ChatMessage[] = [
       { role: "system", content: prompts.header },
     ];
 
     const steps = prompts.loop ?? [];
 
     if (steps.length === 0) {
+      chatRoll.push({ role: "user", content: "Execute a tarefa descrita acima." });
       const data = await this.llmsEngineRepository.handleChat(chatRoll, model);
       if (data) chatRoll.push({ role: "assistant", content: data });
     }
 
     for (const step of steps) {
-      chatRoll.push({ role: "system", content: step });
+      chatRoll.push({ role: "user", content: step });
       const data = await this.llmsEngineRepository.handleChat(chatRoll, model);
       if (data) chatRoll.push({ role: "assistant", content: data });
     }

@@ -6,7 +6,7 @@ import type {
 import {
   resolveLocalLLMBaseURL,
   type LocalLLMConfig,
-} from "../../services/local_llm";
+} from "./localLLMDefaults";
 
 export class LocalLLMModelsAdapter implements LocalLLMModelsPort {
   private client: OpenAI;

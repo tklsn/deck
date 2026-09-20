@@ -1,12 +1,7 @@
 import type { ArtifactInput } from "../../domain/ArtifactInput";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import type { PromptEngineRepositoryPort } from "../../ports/UtilsAndLLMs/PromptEngineRepositoryPort";
-import {
-  buildArtifactTextFallbackPrompt,
-  isArtifactResultAcceptable,
-  isFallbackTextAcceptable,
-  supportsFreeTextArtifactFallback,
-} from "../../services/artifact_generation";
+import { isStructuredToolResultAcceptable } from "../../services/artifact_generation";
 import type { UseCase } from "../_shared/Common";
 import { HandleChat } from "./HandleChat";
 import { HandleArtifactWithTool } from "./HandleArtifactWithTool";
@@ -35,7 +30,7 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
     const toolDefinition = this.promptEngineRepository.getToolDefinition(promptRef);
 
     if (toolDefinition) {
-      const result = (
+      const pieces = (
         await this.handleWithTool.execute({
           context,
           general_instructions,
@@ -44,43 +39,14 @@ export class HandleArtifact implements UseCase<ArtifactInput, string> {
           lang,
           toolDefinition,
         })
-      )
-        .filter(Boolean)
-        .join("\n");
+      ).filter(Boolean);
 
-      if (isArtifactResultAcceptable(result, promptRef, toolDefinition)) {
-        return result;
-      }
-
-      if (supportsFreeTextArtifactFallback(promptRef)) {
-        const prompts = await this.promptEngineRepository.getPrompt(
-          { context, general_instructions, lang },
-          promptRef,
+      if (!pieces.every((p) => isStructuredToolResultAcceptable(String(p), toolDefinition))) {
+        throw new Error(
+          "Resposta incompleta do modelo — o JSON retornado esta invalido ou com campos vazios.",
         );
-
-        const chatRoll = await this.handleChat.execute({
-          prompts: {
-            ...prompts,
-            header: buildArtifactTextFallbackPrompt(prompts.header),
-          },
-          model,
-        });
-
-        const fallback = chatRoll
-          .filter((m) => m.role === "assistant")
-          .map((m) => m.content)
-          .join("\n")
-          .replace("[...]", "\n")
-          .toString();
-
-        if (isFallbackTextAcceptable(fallback)) {
-          return fallback;
-        }
       }
-
-      throw new Error(
-        "Resposta incompleta do modelo — o artefato nao atingiu completude minima.",
-      );
+      return pieces.join("\n");
     }
 
     const prompts = await this.promptEngineRepository.getPrompt(

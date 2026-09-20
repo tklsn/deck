@@ -1,6 +1,6 @@
 import type { Prompts } from "../../domain/Prompt";
 import type { LLMSEngineRepositoryPort } from "../../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
-import type { ChatCompletionMessageParam } from "../../types/completion";
+import type { ChatMessage } from "../../domain/ChatMessage";
 import type { FunctionDefinition } from "../../types/tool";
 import type { UseCase } from "../_shared/Common";
 
@@ -12,7 +12,7 @@ interface HandleChatWithToolInput {
 
 export class HandleChatWithTool implements UseCase<
   HandleChatWithToolInput,
-  ChatCompletionMessageParam[]
+  ChatMessage[]
 > {
   private llmsEngineRepository: LLMSEngineRepositoryPort;
 
@@ -24,20 +24,21 @@ export class HandleChatWithTool implements UseCase<
     prompts,
     model,
     toolDefinition,
-  }: HandleChatWithToolInput): Promise<ChatCompletionMessageParam[]> {
-    const chatRoll: ChatCompletionMessageParam[] = [
+  }: HandleChatWithToolInput): Promise<ChatMessage[]> {
+    const chatRoll: ChatMessage[] = [
       { role: "system", content: prompts.header },
     ];
 
     const steps = prompts.loop ?? [];
 
     if (steps.length === 0) {
+      chatRoll.push({ role: "user", content: "Execute a tarefa descrita acima." });
       const data = await this.llmsEngineRepository.handleChatWithTools(chatRoll, model, toolDefinition, toolDefinition.name);
       if (data) chatRoll.push({ role: "assistant", content: data });
     }
 
     for (const step of steps) {
-      chatRoll.push({ role: "system", content: step });
+      chatRoll.push({ role: "user", content: step });
       const data = await this.llmsEngineRepository.handleChatWithTools(chatRoll, model, toolDefinition, toolDefinition.name);
       if (data) chatRoll.push({ role: "assistant", content: data });
     }

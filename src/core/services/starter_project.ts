@@ -1,7 +1,4 @@
-import { AnthropicRepositoryAdapter } from "../adapters/LLMsManagement/AnthropicRepositoryAdapter";
-import { LocalLLMRepositoryAdapter } from "../adapters/LLMsManagement/LocalLLMRepositoryAdapter";
-import { OpenAIRepositoryAdapter } from "../adapters/LLMsManagement/OpenAIRepositoryAdapter";
-import { OpenRouterRepositoryAdapter } from "../adapters/LLMsManagement/OpenRouterRepositoryAdapter";
+import { createLLMAdapter } from "../adapters/LLMsManagement/createLLMAdapter";
 import { LocalSynomiliaPromptEngineRepositoryAdapter } from "../adapters/LLMsManagement/LocalSynomiliaPromptEngineRepositoryAdapter";
 import type { LLMSEngineRepositoryPort } from "../ports/UtilsAndLLMs/LLMSEngineRepositoryPort";
 import { getApiKey } from "../services/provider_settings";
@@ -237,19 +234,12 @@ export class StarterProjectService {
   } {
     const provider = (project.provider ?? "ollama") as ProviderValue;
 
-    let llmRepo: LLMSEngineRepositoryPort;
-    if (provider === "openai") {
-      llmRepo = new OpenAIRepositoryAdapter(getApiKey("openai") ?? "");
-    } else if (provider === "anthropic") {
-      llmRepo = new AnthropicRepositoryAdapter(getApiKey("anthropic") ?? "");
-    } else if (provider === "openrouter") {
-      llmRepo = new OpenRouterRepositoryAdapter(getApiKey("openrouter") ?? "");
-    } else {
-      llmRepo = new LocalLLMRepositoryAdapter({
-        provider,
-        toolCallStrategy: "auto",
-      });
-    }
+    const isExternal =
+      provider === "openai" || provider === "anthropic" || provider === "openrouter";
+    const llmRepo = createLLMAdapter(
+      provider,
+      isExternal ? getApiKey(provider) : null,
+    );
 
     return { llmRepo, effectiveModel: project.model };
   }

@@ -5,7 +5,7 @@ import type {
 import {
   EXTERNAL_LLM_DEFAULTS,
   type ExternalLLMProvider,
-} from "../../services/external_llm";
+} from "./externalLLMDefaults";
 
 interface OpenAIModelsResponse {
   data: Array<{ id: string }>;

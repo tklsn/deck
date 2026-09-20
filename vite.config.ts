@@ -4,7 +4,7 @@ import vueJsx from "@vitejs/plugin-vue-jsx";
 import path from "node:path";
 import { defineConfig } from "vite";
 import VueRouter from "vue-router/vite";
-// https://vite.dev/config/
+
 export default defineConfig({
   base: "./",
   plugins: [
@@ -18,7 +18,7 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
 });

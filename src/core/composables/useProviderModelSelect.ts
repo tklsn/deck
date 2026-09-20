@@ -2,7 +2,7 @@ import { ref, watch, type Ref } from "vue";
 import { ExternalLLMModelsAdapter } from "../adapters/LLMsManagement/ExternalLLMModelsAdapter";
 import { LocalLLMModelsAdapter } from "../adapters/LLMsManagement/LocalLLMModelsAdapter";
 import type { LocalLLMModel } from "../ports/UtilsAndLLMs/LocalLLMModelsPort";
-import type { ExternalLLMProvider } from "../services/external_llm";
+import type { ExternalLLMProvider } from "../adapters/LLMsManagement/externalLLMDefaults";
 import { getApiKey } from "../services/provider_settings";
 
 export type ProviderValue =
