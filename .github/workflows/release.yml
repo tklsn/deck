@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  packages: read # @tklsn/generation-core vem do GitHub Packages
 
 concurrency:
   group: release-${{ github.ref }}
@@ -45,9 +46,16 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          registry-url: https://npm.pkg.github.com/
+          scope: "@tklsn"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test
+        run: pnpm test
 
       - name: Build web
         run: pnpm run build:web

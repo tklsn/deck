@@ -1,3 +1,5 @@
 allowBuilds:
   electron-winstaller: true
   vue-demi: true
+minimumReleaseAgeExclude:
+  - '@tklsn/generation-core@0.1.0'

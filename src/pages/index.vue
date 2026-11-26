@@ -12,7 +12,9 @@ import { useRouter } from "vue-router";
 import { useLiveQuery } from "../core/composables/useLiveQuery";
 import type { StarterProjectRecord } from "../core/database/StarterProjectDB";
 import { starterProjectDB } from "../core/database/StarterProjectDB";
+import { importProjectJson } from "../core/services/generation";
 import { StarterProjectService } from "../core/services/starter_project";
+import { ref } from "vue";
 
 const LOCAL_USER_ID = "local";
 const router = useRouter();
@@ -29,6 +31,22 @@ const projects = useLiveQuery(
 
 function projectRank(title: string): string {
   return title.trim().charAt(0).toUpperCase() || "?";
+}
+
+const fileInput = ref<HTMLInputElement | null>(null);
+
+// Importa um .json exportado pelo D.E.C.K (formato @tklsn/generation-core) como projeto novo.
+async function handleImport(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+  try {
+    const id = await importProjectJson(await file.text(), LOCAL_USER_ID);
+    router.push(`/project/${id}`);
+  } catch (e) {
+    alert(`Não foi possível importar o projeto: ${(e as Error).message}`);
+  }
 }
 
 async function handleDelete(project: StarterProjectRecord): Promise<void> {
@@ -56,10 +74,23 @@ async function handleDelete(project: StarterProjectRecord): Promise<void> {
           {{ projects.length }} projeto{{ projects.length !== 1 ? "s" : "" }}
         </p>
       </div>
-      <Button size="sm" @click="router.push('/project/create')">
-        <Icon icon="lucide:sparkles" class="mr-1.5 h-3.5 w-3.5" />
-        Nova Ideia
-      </Button>
+      <div class="flex gap-2">
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json,application/json"
+          class="hidden"
+          @change="handleImport"
+        />
+        <Button size="sm" variant="outline" @click="fileInput?.click()">
+          <Icon icon="lucide:upload" class="mr-1.5 h-3.5 w-3.5" />
+          Importar projeto
+        </Button>
+        <Button size="sm" @click="router.push('/project/create')">
+          <Icon icon="lucide:sparkles" class="mr-1.5 h-3.5 w-3.5" />
+          Nova Ideia
+        </Button>
+      </div>
     </div>
 
     <!-- Project grid — card-style -->
