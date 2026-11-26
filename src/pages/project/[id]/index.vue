@@ -26,6 +26,8 @@ import { useLiveQuery } from "../../../core/composables/useLiveQuery";
 import { useProjectExport } from "../../../core/composables/useProjectExport";
 import type { ProviderValue } from "../../../core/composables/useProviderModelSelect";
 import { starterProjectDB } from "../../../core/database/StarterProjectDB";
+import { exportProjectJson } from "../../../core/services/generation";
+import { downloadJson } from "../../../lib/utils";
 import { StarterProjectService } from "../../../core/services/starter_project";
 
 const route = useRoute();
@@ -200,6 +202,17 @@ async function exportProject() {
   if (project.value) await exportProjectFn(project.value);
 }
 
+// JSON versionado (@tklsn/generation-core): leva o projeto para outro D.E.C.K ou para o Sofia.
+async function exportProjectFile() {
+  if (!project.value) return;
+  try {
+    const data = await exportProjectJson(id);
+    downloadJson(data, `${project.value.title.replace(/[^a-z0-9]/gi, "_")}.deck.json`);
+  } catch (e) {
+    alert(`Erro ao exportar o projeto: ${(e as Error).message}`);
+  }
+}
+
 async function handleDelete() {
   if (!project.value) return;
   if (
@@ -241,6 +254,10 @@ async function handleDelete() {
           <p class="text-muted-foreground mt-1 text-sm">{{ project.prompt }}</p>
         </div>
         <div class="flex shrink-0 gap-2">
+          <Button variant="outline" size="sm" title="Arquivo .json para importar em outro D.E.C.K ou no Sofia" @click="exportProjectFile">
+            <Icon icon="lucide:file-json" />
+            Exportar projeto
+          </Button>
           <Button variant="outline" size="sm" @click="openSettings">
             <Icon icon="lucide:settings" />
             Configurações
@@ -422,7 +439,7 @@ async function handleDelete() {
         </Button>
         <Button variant="outline" @click="exportProject()">
           <Icon icon="lucide:download" />
-          Exportar
+          Exportar Markdown
         </Button>
       </div>
 

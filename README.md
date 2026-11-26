@@ -160,10 +160,19 @@ The app checks for updates automatically on startup and notifies you when a new 
 
 **Requirements:** Node 24, pnpm 10
 
+Generation runs on [`@tklsn/generation-core`](https://github.com/tklsn/generation-core), a private package in GitHub Packages. To install it you need a GitHub token with `read:packages` in your user `~/.npmrc` (the project `.npmrc` only points the `@tklsn` scope to GitHub):
+
+```
+//npm.pkg.github.com/:_authToken=<your token>
+```
+
 ```bash
 pnpm install
 pnpm run electron:dev   # dev mode with hot-reload
+pnpm test               # generation + IndexedDB tests (mocked AI provider)
 ```
+
+Projects can be exported and imported as versioned JSON (**Exportar projeto** on the project page, **Importar projeto** on the project list). The same file is the base for sending a project to Sofia.
 
 **Build for production:**
 
